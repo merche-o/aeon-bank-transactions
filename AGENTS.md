@@ -1,41 +1,88 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+# AEON Bank Transactions — Agent Guide
 
-## Expo has changed — do not trust your training data
+Expo + React Native + TypeScript banking MVP. Follow Clean Architecture + MVVM. Prefer Task subagents for bounded workstreams; keep the parent agent thin.
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
+## Stack
 
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+- Expo (see `package.json` for SDK major; check https://docs.expo.dev/versions/v\<major\>.0.0/ before Expo APIs)
+- React Navigation native stack (not Expo Router)
+- Zustand for app state
+- TypeScript `strict`, never `any`
+- Jest + RNTL + Detox
+
+## Architecture (Clean Architecture + MVVM)
+
+Dependency rule:
+
+```text
+views / widgets → viewmodels → store → repositories → data
+```
+
+| Layer | Path | Rules |
+|-------|------|--------|
+| Models | `src/models/` | No React, no Zustand |
+| Data | `src/data/` | Raw mock BE payloads only |
+| Repositories | `src/repositories/` | Port + adapters; return domain models; no React |
+| Store | `src/store/` | Zustand; talks to repository / storage; no JSX |
+| ViewModels | `src/presentation/viewmodels/` | Hooks: state, intents, navigation, share; no heavy JSX |
+| Views | `src/presentation/views/` | Compose widgets; no direct repository imports |
+| Widgets | `src/presentation/widgets/` | Presentational; typed props; stable `testID`s |
+| i18n / theme | `src/i18n/`, `src/theme/` | No hardcoded user strings or raw colors in views/widgets |
+| Security | `src/security/` | Redact PII in logs; sanitize share payloads |
+| Services | `src/services/` | Wrap native APIs (Share, etc.) |
+
+Why both: Clean Architecture keeps ports/adapters and testable domain; MVVM maps to RN (hooks as ViewModels, screens as Views).
+
+## Product rules
+
+- Sort transactions latest-first
+- Amount ≥ 0 green, &lt; 0 red
+- Loading, empty, error (+ retry), no-matching-results states
+- Search (debounced ~300ms) + type filter + date range filter
+- Detail by `refId` only; Share via `ShareService` + `Share.share()`
+- Locales: `en` + `bm` via `t(key)`
+- Theme: `light` | `dark` | `system` via tokens
+- Lang/theme prefs: AsyncStorage; SecureStore reserved for future tokens
+- Never put secrets in `EXPO_PUBLIC_*`
+
+## Testing
+
+- Unit: pure utils (`src/utils/`)
+- Mock: inject fake repository / ShareService at boundaries
+- Component: RNTL on widgets
+- E2E: Detox smoke (list → filter → detail → share)
+- Stable `testID`s: `transaction-list`, `transaction-card-{refId}`, `search-input`, `filter-type-*`, `filter-date-*`, `share-button`, `theme-toggle`, `language-toggle`
+
+## Git-flow
+
+- `main` — stable / submission
+- `develop` — integration
+- `feature/*` — one concern per branch
+- Conventional commits; atomic history that shows thought process
+
+## Subagent orchestration
+
+Parent coordinates, integrates, commits. Spawn parallel Task subagents when write paths do not conflict:
+
+1. Domain + utils + unit tests
+2. Store + security
+3. i18n + theme
+4. List UI / detail + share
+5. Tests + CI
+6. Parallel reviews: architecture, security, test gaps
+
+Each subagent brief must list: paths to touch, AGENTS.md constraints, and paths not to edit. Parent keeps API summaries only — do not re-read entire trees.
 
 ## Commands
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
-
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+npx expo install <pkg>   # SDK-compatible installs
+npm start
+npm test
+npx tsc --noEmit
+npx expo lint
 ```
 
-Run lint and typecheck before declaring any task done.
+## Skills
 
-## Navigation & Routing
-
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
-
-## Rules
-
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+Project skills under `.cursor/skills/`: `aeon-architecture-review`, `aeon-test-author`, `aeon-security-pass`.

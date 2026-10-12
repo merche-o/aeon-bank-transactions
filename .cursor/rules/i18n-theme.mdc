@@ -1,0 +1,12 @@
+---
+description: i18n and theme token conventions
+globs: "src/presentation/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# i18n & Theme
+
+- All user-facing strings via `t(key)` — no hardcoded English/BM in views/widgets
+- All colors via theme tokens / `useTheme()` — no raw hex in presentation layer
+- Locales: `en` | `bm`; ThemeMode: `light` | `dark` | `system`
+- Persist preferences in preferences store (AsyncStorage)

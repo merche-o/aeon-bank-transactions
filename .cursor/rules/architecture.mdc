@@ -1,0 +1,14 @@
+---
+description: Clean Architecture + MVVM layer import rules
+alwaysApply: true
+---
+
+# Architecture
+
+- Dependency flow: `views/widgets → viewmodels → store → repositories → data`
+- `models`, `repositories`, `utils` must not import React or Zustand
+- `views` must not import repositories or `data/` directly
+- `widgets` are presentational; business logic lives in viewmodels/utils
+- Prefer small reusable widgets over monolithic screen files
+- No `any` — use proper TypeScript interfaces
+- Path alias `@/` maps to `src/`

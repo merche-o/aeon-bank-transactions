@@ -1,0 +1,14 @@
+---
+description: Jest, mock, RNTL, and Detox testing standards
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Testing
+
+- Unit-test pure utils (sort, filter, format, search, security redaction)
+- Mock-test at repository/service boundaries with `jest.fn()` fakes
+- Component-test widgets with React Native Testing Library
+- Detox E2E: list → search/filter → detail → share; use stable `testID`s
+- New feature work includes matching unit and/or mock tests
+- Avoid flaky real timers in mock tests — inject delays or mock them

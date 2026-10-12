@@ -1,0 +1,12 @@
+---
+description: Prefer Task subagents to keep parent context lean
+alwaysApply: true
+---
+
+# Subagent orchestration
+
+- Parent agent coordinates, integrates, and commits — does not own large feature trees alone
+- Spawn parallel Task subagents when write paths do not conflict
+- Each brief must include: paths to touch, AGENTS.md constraints, paths not to edit
+- After a subagent finishes, keep the summary (APIs, files, test results) — do not re-read entire trees
+- Before submission, run architecture / security / test-gap reviews in parallel

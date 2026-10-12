@@ -1,0 +1,12 @@
+---
+description: Banking MVP security conventions
+alwaysApply: true
+---
+
+# Security
+
+- Never log raw `refId`, amounts, or recipient names in production — use `SecureLogger`
+- Prefer AsyncStorage for lang/theme; SecureStore only for future tokens/secrets
+- Share text must go through `sanitizeSharePayload`
+- No secrets in client bundle; never use `EXPO_PUBLIC_` for secrets
+- Repository port must allow swapping mock for authenticated API later
