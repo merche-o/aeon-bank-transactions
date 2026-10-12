@@ -19,12 +19,18 @@ describe('Transactions smoke', () => {
       .withTimeout(20000);
   });
 
-  it('opens detail from the first card and shows share', async () => {
+  it('filters outgoing, opens detail, and shows share', async () => {
     await waitFor(element(by.id('transaction-list')))
       .toBeVisible()
       .withTimeout(20000);
 
-    await element(by.id('transaction-card-123ABC')).tap();
+    await element(by.id('filter-type-outgoing')).tap();
+    await waitFor(element(by.id('transaction-card-789GHI')))
+      .toBeVisible()
+      .withTimeout(5000);
+    await expect(element(by.id('transaction-card-123ABC'))).not.toBeVisible();
+
+    await element(by.id('transaction-card-789GHI')).tap();
 
     await waitFor(element(by.id('transaction-detail')))
       .toBeVisible()

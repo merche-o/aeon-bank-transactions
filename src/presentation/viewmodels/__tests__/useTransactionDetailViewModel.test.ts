@@ -1,8 +1,9 @@
-import { act, renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import type { Transaction } from '@/models/Transaction';
 import * as ShareService from '@/services/ShareService';
 import {
+  resetTransactionRepository,
   resetTransactionStore,
   useTransactionStore,
 } from '@/store/transactionStore';
@@ -23,6 +24,7 @@ describe('useTransactionDetailViewModel', () => {
   beforeEach(() => {
     shareTransactionMock.mockResolvedValue(undefined);
     resetTransactionStore();
+    resetTransactionRepository();
     useTransactionStore.setState({ transactions: [transaction], loading: false, error: null });
   });
 
@@ -60,7 +62,12 @@ describe('useTransactionDetailViewModel', () => {
   });
 
   it('share is a no-op when transaction is missing', async () => {
+    useTransactionStore.setState({ transactions: [], loading: false, error: null });
     const { result } = await renderHook(() => useTransactionDetailViewModel('missing'));
+
+    await waitFor(() => {
+      expect(result.current.transaction).toBeUndefined();
+    });
 
     await act(async () => {
       await result.current.share();

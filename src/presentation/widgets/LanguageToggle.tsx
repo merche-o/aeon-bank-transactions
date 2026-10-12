@@ -1,35 +1,26 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { t } from '@/i18n';
-import type { Locale } from '@/i18n/types';
-import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
-function nextLocale(current: Locale): Locale {
-  return current === 'en' ? 'bm' : 'en';
-}
-
-function localeLabelKey(locale: Locale): 'language.en' | 'language.bm' {
-  return locale === 'bm' ? 'language.bm' : 'language.en';
-}
-
 export type LanguageToggleProps = {
-  locale: Locale;
+  accessibilityLabel: string;
+  label: string;
+  onPress: () => void;
 };
 
-export function LanguageToggle({ locale }: LanguageToggleProps) {
-  const setLocale = usePreferencesStore((state) => state.setLocale);
+export function LanguageToggle({
+  accessibilityLabel,
+  label,
+  onPress,
+}: LanguageToggleProps) {
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
 
-  const displayLocale = nextLocale(locale);
-  const label = t(localeLabelKey(displayLocale), locale);
-
   return (
     <Pressable
-      accessibilityLabel={t('language.label', locale)}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      onPress={() => setLocale(displayLocale)}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
         {

@@ -5,17 +5,15 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { RootNavigator } from '@/navigation/RootNavigator';
+import { MockTransactionRepository } from '@/repositories/MockTransactionRepository';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { useTransactionStore } from '@/store/transactionStore';
+import { setTransactionRepository } from '@/store/transactionStore';
 import { ThemeProvider, useTheme } from '@/theme';
+
+setTransactionRepository(new MockTransactionRepository(400));
 
 function NavigationRoot() {
   const theme = useTheme();
-  const fetchTransactions = useTransactionStore((state) => state.fetch);
-
-  useEffect(() => {
-    void fetchTransactions();
-  }, [fetchTransactions]);
 
   const navigationTheme = useMemo(() => {
     const base = theme.colorScheme === 'dark' ? DarkTheme : DefaultTheme;

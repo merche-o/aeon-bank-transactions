@@ -12,6 +12,7 @@ export interface TransactionStoreState {
   fetch: () => Promise<void>;
   refresh: () => Promise<void>;
   getByRefId: (refId: string) => Transaction | undefined;
+  ensureByRefId: (refId: string) => Promise<Transaction | null>;
   clearError: () => void;
 }
 
@@ -54,6 +55,20 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
 
   getByRefId: (refId: string) =>
     get().transactions.find((transaction) => transaction.refId === refId),
+
+  ensureByRefId: async (refId: string) => {
+    const cached = get().getByRefId(refId);
+    if (cached) {
+      return cached;
+    }
+    const fetched = await transactionRepository.getTransactionByRefId(refId);
+    if (fetched) {
+      set((state) => ({
+        transactions: sortTransactions([...state.transactions, fetched]),
+      }));
+    }
+    return fetched;
+  },
 
   clearError: () => set({ error: null }),
 }));

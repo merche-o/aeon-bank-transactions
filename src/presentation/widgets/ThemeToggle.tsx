@@ -1,45 +1,21 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { t } from '@/i18n';
-import type { Locale } from '@/i18n/types';
-import { usePreferencesStore, type ThemeMode } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
-const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system'];
-
-function nextThemeMode(current: ThemeMode): ThemeMode {
-  const index = THEME_CYCLE.indexOf(current);
-  const nextIndex = index === -1 ? 0 : (index + 1) % THEME_CYCLE.length;
-  return THEME_CYCLE[nextIndex] ?? 'system';
-}
-
-function themeLabelKey(mode: ThemeMode): 'theme.light' | 'theme.dark' | 'theme.system' {
-  if (mode === 'dark') {
-    return 'theme.dark';
-  }
-  if (mode === 'system') {
-    return 'theme.system';
-  }
-  return 'theme.light';
-}
-
 export type ThemeToggleProps = {
-  locale: Locale;
+  label: string;
+  onPress: () => void;
 };
 
-export function ThemeToggle({ locale }: ThemeToggleProps) {
-  const themeMode = usePreferencesStore((state) => state.themeMode);
-  const setThemeMode = usePreferencesStore((state) => state.setThemeMode);
+export function ThemeToggle({ label, onPress }: ThemeToggleProps) {
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
-
-  const label = t(themeLabelKey(themeMode), locale);
 
   return (
     <Pressable
       accessibilityLabel={label}
       accessibilityRole="button"
-      onPress={() => setThemeMode(nextThemeMode(themeMode))}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
         {

@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import { useLayoutEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,61 +8,22 @@ import { formatDate } from '@/utils/formatDate';
 
 import { useTransactionDetailViewModel } from '../viewmodels/useTransactionDetailViewModel';
 import { AmountText } from '../widgets/AmountText';
+import { DetailRow } from '../widgets/DetailRow';
 import { StateMessage } from '../widgets/StateMessage';
 
 export type TransactionDetailViewProps = {
   refId: string;
 };
 
-function DetailRow({
-  label,
-  value,
-  testID,
-}: {
-  label: string;
-  value: string;
-  testID?: string;
-}) {
-  const theme = useTheme();
-  const { colors, spacing, typography } = theme;
-
-  return (
-    <View
-      style={[
-        styles.row,
-        {
-          borderBottomColor: colors.borderSubtle,
-          paddingVertical: spacing.md,
-        },
-      ]}
-      testID={testID}
-    >
-      <Text
-        style={{
-          color: colors.textMuted,
-          fontSize: typography.fontSize.sm,
-          marginBottom: spacing.xxs,
-        }}
-      >
-        {label}
-      </Text>
-      <Text
-        style={{
-          color: colors.textPrimary,
-          fontSize: typography.fontSize.md,
-          fontWeight: typography.fontWeight.medium,
-        }}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
+  const navigation = useNavigation();
   const vm = useTransactionDetailViewModel(refId);
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: vm.labels.title });
+  }, [navigation, vm.labels.title]);
 
   if (vm.transaction == null) {
     return (
@@ -193,9 +156,6 @@ const styles = StyleSheet.create({
   receipt: {
     borderRadius: 16,
     borderWidth: 1,
-  },
-  row: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   shareButton: {
     borderRadius: 12,

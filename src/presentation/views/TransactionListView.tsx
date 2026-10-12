@@ -42,8 +42,12 @@ export function TransactionListView() {
           {vm.labels.title}
         </Text>
         <View style={[styles.toggles, { gap: spacing.sm }]}>
-          <LanguageToggle locale={vm.locale} />
-          <ThemeToggle locale={vm.locale} />
+          <LanguageToggle
+            accessibilityLabel={vm.languageAccessibilityLabel}
+            label={vm.languageToggleLabel}
+            onPress={vm.toggleLocale}
+          />
+          <ThemeToggle label={vm.themeToggleLabel} onPress={vm.cycleTheme} />
         </View>
       </View>
       <SearchBar
@@ -65,11 +69,14 @@ export function TransactionListView() {
     </View>
   );
 
+  const shellStyle = [styles.flex, { backgroundColor: colors.background }];
+
   if (vm.loading && vm.isEmpty && !vm.showNoMatchingResults) {
     return (
       <SafeAreaView
         edges={['top', 'left', 'right']}
-        style={[styles.flex, { backgroundColor: colors.background }]}
+        style={shellStyle}
+        testID="transaction-list"
       >
         {listHeader}
         <LoadingState message={vm.labels.loading} />
@@ -81,7 +88,8 @@ export function TransactionListView() {
     return (
       <SafeAreaView
         edges={['top', 'left', 'right']}
-        style={[styles.flex, { backgroundColor: colors.background }]}
+        style={shellStyle}
+        testID="transaction-list"
       >
         {listHeader}
         <ErrorState
@@ -97,7 +105,8 @@ export function TransactionListView() {
     return (
       <SafeAreaView
         edges={['top', 'left', 'right']}
-        style={[styles.flex, { backgroundColor: colors.background }]}
+        style={shellStyle}
+        testID="transaction-list"
       >
         {listHeader}
         <EmptyState title={vm.labels.empty} />
@@ -108,7 +117,7 @@ export function TransactionListView() {
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
-      style={[styles.flex, { backgroundColor: colors.background }]}
+      style={shellStyle}
       testID="transaction-list"
     >
       <FlatList

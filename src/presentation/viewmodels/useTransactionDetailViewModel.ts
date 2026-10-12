@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { t } from '@/i18n';
 import type { Transaction } from '@/models/Transaction';
@@ -9,11 +9,29 @@ import { useTransactionStore } from '@/store/transactionStore';
 export function useTransactionDetailViewModel(refId: string) {
   const locale = usePreferencesStore((state) => state.locale);
   const getByRefId = useTransactionStore((state) => state.getByRefId);
-
-  const transaction: Transaction | undefined = useMemo(
-    () => getByRefId(refId),
-    [getByRefId, refId],
+  const ensureByRefId = useTransactionStore((state) => state.ensureByRefId);
+  const [resolved, setResolved] = useState<Transaction | null | undefined>(
+    () => getByRefId(refId) ?? undefined,
   );
+
+  useEffect(() => {
+    const cached = getByRefId(refId);
+    if (cached) {
+      setResolved(cached);
+      return;
+    }
+    let cancelled = false;
+    void ensureByRefId(refId).then((item) => {
+      if (!cancelled) {
+        setResolved(item);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ensureByRefId, getByRefId, refId]);
+
+  const transaction = resolved ?? undefined;
 
   const shareLabels = useMemo(
     () => ({

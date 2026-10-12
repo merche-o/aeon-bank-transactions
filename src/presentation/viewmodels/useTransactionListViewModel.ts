@@ -3,9 +3,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { t } from '@/i18n';
+import type { Locale } from '@/i18n/types';
 import type { DateRangeFilter, FilterCriteria, TypeFilter } from '@/models/Transaction';
 import type { RootNavigationProp } from '@/navigation/types';
-import { usePreferencesStore } from '@/store/preferencesStore';
+import {
+  usePreferencesStore,
+  type ThemeMode,
+} from '@/store/preferencesStore';
 import { useTransactionStore } from '@/store/transactionStore';
 import { filterTransactions } from '@/utils/filterTransactions';
 
@@ -15,9 +19,32 @@ const DEFAULT_CRITERIA: FilterCriteria = {
   dateRange: 'all',
 };
 
+const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system'];
+
+function nextThemeMode(current: ThemeMode): ThemeMode {
+  const index = THEME_CYCLE.indexOf(current);
+  const nextIndex = index === -1 ? 0 : (index + 1) % THEME_CYCLE.length;
+  return THEME_CYCLE[nextIndex] ?? 'system';
+}
+
+function themeLabelKey(
+  mode: ThemeMode,
+): 'theme.light' | 'theme.dark' | 'theme.system' {
+  if (mode === 'dark') {
+    return 'theme.dark';
+  }
+  if (mode === 'system') {
+    return 'theme.system';
+  }
+  return 'theme.light';
+}
+
 export function useTransactionListViewModel() {
   const navigation = useNavigation<RootNavigationProp>();
   const locale = usePreferencesStore((state) => state.locale);
+  const themeMode = usePreferencesStore((state) => state.themeMode);
+  const setLocale = usePreferencesStore((state) => state.setLocale);
+  const setThemeMode = usePreferencesStore((state) => state.setThemeMode);
 
   const storeTransactions = useTransactionStore((state) => state.transactions);
   const loading = useTransactionStore((state) => state.loading);
@@ -71,6 +98,15 @@ export function useTransactionListViewModel() {
     [navigation],
   );
 
+  const cycleTheme = useCallback(() => {
+    setThemeMode(nextThemeMode(themeMode));
+  }, [setThemeMode, themeMode]);
+
+  const toggleLocale = useCallback(() => {
+    const next: Locale = locale === 'en' ? 'bm' : 'en';
+    setLocale(next);
+  }, [locale, setLocale]);
+
   const typeFilterOptions = useMemo(
     () =>
       [
@@ -116,6 +152,11 @@ export function useTransactionListViewModel() {
     error,
     refresh,
     openDetail,
+    cycleTheme,
+    toggleLocale,
+    themeToggleLabel: t(themeLabelKey(themeMode), locale),
+    languageToggleLabel: t(locale === 'en' ? 'language.bm' : 'language.en', locale),
+    languageAccessibilityLabel: t('language.label', locale),
     showNoMatchingResults,
     showFullScreenError,
     isEmpty: !loading && error == null && storeTransactions.length === 0,
