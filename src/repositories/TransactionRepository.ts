@@ -12,4 +12,5 @@ export interface TransactionRepository {
     refId: string,
     category: TransactionCategory,
   ): Promise<void>;
+  cancelScheduledTransaction(refId: string): Promise<void>;
 }

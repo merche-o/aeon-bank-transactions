@@ -14,6 +14,8 @@ export function isTransactionCategory(value: string): value is TransactionCatego
   return (TRANSACTION_CATEGORIES as readonly string[]).includes(value);
 }
 
+export type TransactionStatus = 'completed' | 'scheduled' | 'cancelled';
+
 export interface Transaction {
   refId: string;
   transferDate: string;
@@ -21,6 +23,9 @@ export interface Transaction {
   transferName: string;
   amount: number;
   category: TransactionCategory;
+  status: TransactionStatus;
+  scheduledFor?: string;
+  recipientId?: string;
 }
 
 export type FlowType = 'incoming' | 'outgoing';
@@ -50,4 +55,7 @@ export interface NewTransactionInput {
   transferName: string;
   amount: number;
   category: TransactionCategory;
+  status?: TransactionStatus;
+  scheduledFor?: string;
+  recipientId?: string;
 }

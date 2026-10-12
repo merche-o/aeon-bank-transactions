@@ -28,6 +28,7 @@ export interface TransactionStoreState {
   getByRefId: (refId: string) => Transaction | undefined;
   ensureByRefId: (refId: string) => Promise<Transaction | null>;
   addTransaction: (input: NewTransactionInput) => Promise<Transaction>;
+  cancelScheduled: (refId: string) => Promise<void>;
   setCategory: (refId: string, category: TransactionCategory) => Promise<void>;
   clearError: () => void;
 }
@@ -115,6 +116,17 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
       withBalance(sortTransactions([created, ...state.transactions])),
     );
     return created;
+  },
+
+  cancelScheduled: async (refId: string) => {
+    await transactionRepository.cancelScheduledTransaction(refId);
+    set((state) => ({
+      ...withBalance(
+        state.transactions.map((tx) =>
+          tx.refId === refId ? { ...tx, status: 'cancelled' as const } : tx,
+        ),
+      ),
+    }));
   },
 
   setCategory: async (refId, category) => {

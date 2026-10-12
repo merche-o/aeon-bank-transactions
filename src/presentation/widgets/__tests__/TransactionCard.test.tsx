@@ -12,6 +12,7 @@ const sample: Transaction = {
   transferName: 'Purchase',
   amount: -88.9,
   category: 'food',
+    status: 'completed',
 };
 
 describe('TransactionCard', () => {

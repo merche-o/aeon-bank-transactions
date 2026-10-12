@@ -16,6 +16,7 @@ export function RootNavigator() {
     <Drawer.Navigator
       drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
+        drawerPosition: 'right',
         drawerType: 'front',
         headerShown: false,
         drawerStyle: { backgroundColor: colors.background },

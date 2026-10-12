@@ -1,8 +1,16 @@
 import type { Transaction } from '../models/Transaction';
 import { formatCurrency } from './formatCurrency';
 
+function countsTowardBalance(tx: Transaction): boolean {
+  const status = tx.status ?? 'completed';
+  return status === 'completed';
+}
+
 export function sumBalance(transactions: Transaction[]): number {
-  return transactions.reduce((sum, tx) => sum + tx.amount, 0);
+  return transactions.reduce(
+    (sum, tx) => (countsTowardBalance(tx) ? sum + tx.amount : sum),
+    0,
+  );
 }
 
 /** Outgoing amounts are negative; incoming always affordable. */

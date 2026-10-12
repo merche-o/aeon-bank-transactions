@@ -90,7 +90,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
         label={t('drawer.language', locale)}
         onPress={toggleLocale}
         testID="drawer-language"
-        value={t(locale === 'en' ? 'language.bm' : 'language.en', locale)}
+        value={t(locale === 'en' ? 'language.en' : 'language.bm', locale)}
       />
       <DrawerRow
         label={t('drawer.profile', locale)}

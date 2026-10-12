@@ -10,5 +10,7 @@ export function mapTransactionDto(dto: TransactionDto): Transaction {
     transferName: dto.transferName,
     amount: dto.amount,
     category: dto.category ?? defaultCategoryForAmount(dto.amount),
+    status: 'completed',
+    recipientId: dto.recipientId,
   };
 }

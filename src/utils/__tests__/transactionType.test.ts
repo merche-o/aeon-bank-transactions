@@ -8,6 +8,7 @@ const incoming: Transaction = {
   transferName: 'In',
   amount: 10,
   category: 'salary',
+    status: 'completed',
 };
 
 const outgoing: Transaction = { ...incoming, amount: -10 };
