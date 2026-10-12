@@ -1,18 +1,20 @@
 import { useNavigation } from '@react-navigation/native';
-import { useLayoutEffect, type ReactNode } from 'react';
+import { useLayoutEffect } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
 
 import { useAddRecipientViewModel } from '../viewmodels/useAddRecipientViewModel';
+import { FormField } from '../widgets/FormField';
 
 export function AddRecipientView() {
   const navigation = useNavigation();
@@ -30,82 +32,69 @@ export function AddRecipientView() {
       style={[styles.flex, { backgroundColor: colors.background }]}
       testID="add-recipient-screen"
     >
-      <ScrollView
-        contentContainerStyle={{
-          paddingBottom: spacing.xxxl,
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.lg,
-        }}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
       >
-        <Field label={vm.labels.name}>
-          <TextInput
-            onChangeText={vm.setDisplayName}
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors, typography)}
-            testID="add-recipient-name"
-            value={vm.displayName}
-          />
-        </Field>
-        <Field label={vm.labels.accountHint}>
-          <TextInput
-            onChangeText={vm.setAccountHint}
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors, typography)}
-            testID="add-recipient-hint"
-            value={vm.accountHint}
-          />
-        </Field>
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={!vm.canSave}
-          onPress={() => void vm.save()}
-          style={({ pressed }) => [
-            styles.saveButton,
-            {
-              backgroundColor: vm.canSave ? colors.primary : colors.borderSubtle,
-              marginTop: spacing.xl,
-              opacity: pressed && vm.canSave ? 0.9 : 1,
-              paddingVertical: spacing.lg,
-            },
-          ]}
-          testID="add-recipient-save"
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: spacing.xxxl,
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.lg,
+          }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text
-            style={{
-              color: vm.canSave ? colors.textInverse : colors.textMuted,
-              fontSize: typography.fontSize.md,
-              fontWeight: typography.fontWeight.semibold,
-              textAlign: 'center',
-            }}
+          <FormField label={vm.labels.name}>
+            <TextInput
+              onChangeText={vm.setDisplayName}
+              placeholderTextColor={colors.textMuted}
+              style={inputStyle(colors, typography)}
+              testID="add-recipient-name"
+              value={vm.displayName}
+            />
+          </FormField>
+          <FormField label={vm.labels.accountHint}>
+            <TextInput
+              onChangeText={vm.setAccountHint}
+              placeholderTextColor={colors.textMuted}
+              style={inputStyle(colors, typography)}
+              testID="add-recipient-hint"
+              value={vm.accountHint}
+            />
+          </FormField>
+
+          <Pressable
+            accessibilityLabel={vm.labels.save}
+            accessibilityRole="button"
+            disabled={!vm.canSave}
+            onPress={() => void vm.save()}
+            style={({ pressed }) => [
+              styles.saveButton,
+              {
+                backgroundColor: vm.canSave
+                  ? colors.primary
+                  : colors.borderSubtle,
+                marginTop: spacing.xl,
+                opacity: pressed && vm.canSave ? 0.9 : 1,
+                paddingVertical: spacing.lg,
+              },
+            ]}
+            testID="add-recipient-save"
           >
-            {vm.labels.save}
-          </Text>
-        </Pressable>
-      </ScrollView>
+            <Text
+              style={{
+                color: vm.canSave ? colors.textInverse : colors.textMuted,
+                fontSize: typography.fontSize.md,
+                fontWeight: typography.fontWeight.semibold,
+                textAlign: 'center',
+              }}
+            >
+              {vm.labels.save}
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  const theme = useTheme();
-  const { colors, spacing, typography } = theme;
-
-  return (
-    <View style={{ marginTop: spacing.md }}>
-      <Text
-        style={{
-          color: colors.textSecondary,
-          fontSize: typography.fontSize.sm,
-          fontWeight: typography.fontWeight.medium,
-          marginBottom: spacing.xs,
-        }}
-      >
-        {label}
-      </Text>
-      {children}
-    </View>
   );
 }
 

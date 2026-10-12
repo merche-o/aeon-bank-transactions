@@ -181,7 +181,7 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
           />
         </View>
 
-        {vm.canSettlePending ? (
+        {vm.showSettleActions ? (
           <View style={{ gap: spacing.sm, marginTop: spacing.xl }}>
             <Text
               style={{
@@ -193,14 +193,29 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
             >
               {vm.labels.exerciseNote}
             </Text>
+            {vm.settleError ? (
+              <Text
+                style={{
+                  color: colors.error,
+                  fontSize: typography.fontSize.sm,
+                }}
+                testID="detail-settle-error"
+              >
+                {vm.settleError}
+              </Text>
+            ) : null}
             <Pressable
+              accessibilityLabel={vm.labels.markPaid}
               accessibilityRole="button"
+              disabled={!vm.canSettlePending}
               onPress={() => void vm.markPaid()}
               style={({ pressed }) => [
                 styles.primaryButton,
                 {
-                  backgroundColor: colors.primary,
-                  opacity: pressed ? 0.88 : 1,
+                  backgroundColor: vm.canSettlePending
+                    ? colors.primary
+                    : colors.borderSubtle,
+                  opacity: pressed && vm.canSettlePending ? 0.88 : 1,
                   paddingVertical: spacing.md,
                 },
               ]}
@@ -208,7 +223,9 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
             >
               <Text
                 style={{
-                  color: colors.textInverse,
+                  color: vm.canSettlePending
+                    ? colors.textInverse
+                    : colors.textMuted,
                   fontSize: typography.fontSize.md,
                   fontWeight: typography.fontWeight.semibold,
                   textAlign: 'center',
@@ -218,13 +235,15 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
               </Text>
             </Pressable>
             <Pressable
+              accessibilityLabel={vm.labels.cancelRequest}
               accessibilityRole="button"
+              disabled={!vm.canSettlePending}
               onPress={() => void vm.cancelPending()}
               style={({ pressed }) => [
                 styles.secondaryButton,
                 {
                   borderColor: colors.borderSubtle,
-                  opacity: pressed ? 0.88 : 1,
+                  opacity: pressed && vm.canSettlePending ? 0.88 : vm.canSettlePending ? 1 : 0.5,
                   paddingVertical: spacing.md,
                 },
               ]}

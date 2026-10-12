@@ -1,6 +1,9 @@
 ---
 name: aeon-architecture-review
-description: Review AEON Bank Transactions for Clean Architecture + MVVM layering, reusable widgets, and TypeScript strictness. Use before merge or submission.
+description: >-
+  Review AEON Bank Transactions for Clean Architecture + MVVM layering, reusable
+  widgets, and TypeScript strictness. Use before merge or submission, and as the
+  architecture pass inside aeon-submission-polish / aeon-verifier.
 ---
 
 # Architecture review

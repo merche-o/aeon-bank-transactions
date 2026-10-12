@@ -11,6 +11,7 @@ import {
   BudgetReportControls,
   BudgetTopFlows,
 } from '@/presentation/widgets/budget';
+import { LoadingState } from '@/presentation/widgets/LoadingState';
 import { useTheme } from '@/theme';
 
 import { useBudgetViewModel } from '../viewmodels/useBudgetViewModel';
@@ -123,15 +124,9 @@ export function BudgetView() {
         ) : null}
 
         {vm.loading ? (
-          <Text
-            style={{
-              color: colors.textMuted,
-              fontSize: typography.fontSize.md,
-              paddingHorizontal: spacing.lg,
-            }}
-          >
-            {vm.labels.loading}
-          </Text>
+          <View style={{ minHeight: 160 }}>
+            <LoadingState message={vm.labels.loading} testID="budget-loading" />
+          </View>
         ) : vm.isEmpty ? (
           <BudgetEmptyState message={vm.labels.empty} />
         ) : vm.noMatching ? (

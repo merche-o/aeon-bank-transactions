@@ -12,6 +12,7 @@ import {
 } from '@/store/transactionStore';
 import { canAfford, getInsufficientFundsMessage } from '@/utils/balance';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { parseAmountInput } from '@/utils/parseAmountInput';
 
 export type PayTiming = 'now' | 'schedule';
 
@@ -47,10 +48,11 @@ export function useQuickPayViewModel(recipientId: string) {
     minimumScheduleDate().toISOString(),
   );
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const parsedAmount = useMemo(() => {
-    const value = parseFloat(amountText.replace(/,/g, ''));
-    if (!Number.isFinite(value) || value <= 0) {
+    const value = parseAmountInput(amountText);
+    if (value == null) {
       return null;
     }
     return -value;
@@ -90,6 +92,7 @@ export function useQuickPayViewModel(recipientId: string) {
       return;
     }
     setSaving(true);
+    setSubmitError(null);
     try {
       const nowIso = new Date().toISOString();
       const transferName = transferNameDraft.trim() || transferTitle;
@@ -121,15 +124,20 @@ export function useQuickPayViewModel(recipientId: string) {
         refId: created.refId,
       });
     } catch (cause) {
-      if (!(cause instanceof InsufficientFundsError)) {
-        throw cause;
+      if (cause instanceof InsufficientFundsError) {
+        setSubmitError(insufficientFundsMessage);
+        return;
       }
+      setSubmitError(t('error.generic', locale));
     } finally {
       setSaving(false);
     }
   }, [
     addTransaction,
     canConfirm,
+    category,
+    insufficientFundsMessage,
+    locale,
     navigation,
     parsedAmount,
     recipient,
@@ -137,8 +145,14 @@ export function useQuickPayViewModel(recipientId: string) {
     timing,
     transferNameDraft,
     transferTitle,
-    category,
   ]);
+
+  const confirmLabel =
+    saving
+      ? t('pay.sending', locale)
+      : timing === 'now'
+        ? t('pay.confirmSend', locale)
+        : t('pay.confirmSchedule', locale);
 
   return {
     recipient,
@@ -157,11 +171,15 @@ export function useQuickPayViewModel(recipientId: string) {
     balanceFormatted: formatCurrency(balance),
     showInsufficientFunds,
     insufficientFundsMessage,
+    submitError,
+    saving,
     canConfirm,
     confirm,
+    confirmLabel,
     transferTitle,
     labels: {
       amount: t('pay.amount', locale),
+      amountPlaceholder: t('pay.amountPlaceholder', locale),
       transferName: t('add.transferName', locale),
       category: t('add.categoryLabel', locale),
       sendNow: t('pay.sendNow', locale),

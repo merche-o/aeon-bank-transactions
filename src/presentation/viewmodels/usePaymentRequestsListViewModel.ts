@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { t } from '@/i18n';
 import { usePaymentRequestStore } from '@/store/paymentRequestStore';
@@ -21,6 +21,9 @@ export function usePaymentRequestsListViewModel() {
   const cancel = usePaymentRequestStore((state) => state.cancel);
   const recipients = useRecipientStore((state) => state.recipients);
 
+  const [settlingId, setSettlingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   useEffect(() => {
     void fetchRequests();
   }, [fetchRequests]);
@@ -40,23 +43,47 @@ export function usePaymentRequestsListViewModel() {
   }, [paymentRequests, recipients]);
 
   const markPaid = useCallback(
-    (id: string) => {
-      void fulfill(id);
+    async (id: string) => {
+      if (settlingId != null) {
+        return;
+      }
+      setSettlingId(id);
+      setActionError(null);
+      try {
+        await fulfill(id);
+      } catch {
+        setActionError(t('error.generic', locale));
+      } finally {
+        setSettlingId(null);
+      }
     },
-    [fulfill],
+    [fulfill, locale, settlingId],
   );
 
   const cancelRequest = useCallback(
-    (id: string) => {
-      void cancel(id);
+    async (id: string) => {
+      if (settlingId != null) {
+        return;
+      }
+      setSettlingId(id);
+      setActionError(null);
+      try {
+        await cancel(id);
+      } catch {
+        setActionError(t('error.generic', locale));
+      } finally {
+        setSettlingId(null);
+      }
     },
-    [cancel],
+    [cancel, locale, settlingId],
   );
 
   return {
     pendingRows,
     markPaid,
     cancelRequest,
+    settlingId,
+    actionError,
     labels: {
       title: t('pay.requestsTitle', locale),
       empty: t('empty.transactions', locale),

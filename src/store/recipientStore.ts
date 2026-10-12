@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type { NewRecipientInput, Recipient } from '@/models/Recipient';
 import { MockRecipientRepository } from '@/repositories/MockRecipientRepository';
 import type { RecipientRepository } from '@/repositories/RecipientRepository';
+import { SecureLogger } from '@/security/SecureLogger';
 
 export interface RecipientStoreState {
   recipients: Recipient[];
@@ -35,6 +36,7 @@ export const useRecipientStore = create<RecipientStoreState>((set) => ({
       const recipients = await recipientRepository.list();
       set({ recipients, loading: false, error: null });
     } catch (cause) {
+      SecureLogger.error('recipientStore.fetch failed', cause);
       const message =
         cause instanceof Error ? cause.message : 'Failed to load recipients';
       set({ loading: false, error: message });
@@ -42,18 +44,28 @@ export const useRecipientStore = create<RecipientStoreState>((set) => ({
   },
 
   add: async (input) => {
-    const created = await recipientRepository.add(input);
-    set((state) => ({
-      recipients: [created, ...state.recipients],
-    }));
-    return created;
+    try {
+      const created = await recipientRepository.add(input);
+      set((state) => ({
+        recipients: [created, ...state.recipients],
+      }));
+      return created;
+    } catch (cause) {
+      SecureLogger.error('recipientStore.add failed', cause);
+      throw cause;
+    }
   },
 
   remove: async (id) => {
-    await recipientRepository.remove(id);
-    set((state) => ({
-      recipients: state.recipients.filter((recipient) => recipient.id !== id),
-    }));
+    try {
+      await recipientRepository.remove(id);
+      set((state) => ({
+        recipients: state.recipients.filter((recipient) => recipient.id !== id),
+      }));
+    } catch (cause) {
+      SecureLogger.error('recipientStore.remove failed', cause);
+      throw cause;
+    }
   },
 
   clearError: () => set({ error: null }),

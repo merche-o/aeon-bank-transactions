@@ -8,7 +8,8 @@ import type {
 } from '@/models/Transaction';
 import { MockTransactionRepository } from '@/repositories/MockTransactionRepository';
 import type { TransactionRepository } from '@/repositories/TransactionRepository';
-import { canAfford, sumBalance } from '@/utils/balance';
+import { SecureLogger } from '@/security/SecureLogger';
+import { canAfford, sumAvailableBalance } from '@/utils/balance';
 import { sortTransactions } from '@/utils/sortTransactions';
 
 export class InsufficientFundsError extends Error {
@@ -38,6 +39,9 @@ export interface TransactionStoreState {
 
 let transactionRepository: TransactionRepository = new MockTransactionRepository(0);
 
+/** Serializes writes so concurrent addTransaction calls do not race. */
+let addTransactionChain: Promise<void> = Promise.resolve();
+
 export function setTransactionRepository(repository: TransactionRepository): void {
   transactionRepository = repository;
 }
@@ -49,8 +53,28 @@ export function resetTransactionRepository(): void {
 function withBalance(transactions: Transaction[]) {
   return {
     transactions,
-    balance: sumBalance(transactions),
+    balance: sumAvailableBalance(transactions),
   };
+}
+
+async function addTransactionUnlocked(
+  input: NewTransactionInput,
+  get: () => TransactionStoreState,
+  set: (
+    partial:
+      | Partial<TransactionStoreState>
+      | ((state: TransactionStoreState) => Partial<TransactionStoreState>),
+  ) => void,
+): Promise<Transaction> {
+  const { balance } = get();
+  if (!canAfford(balance, input.amount)) {
+    throw new InsufficientFundsError();
+  }
+  const created = await transactionRepository.addTransaction(input);
+  set((state) =>
+    withBalance(sortTransactions([created, ...state.transactions])),
+  );
+  return created;
 }
 
 export const useTransactionStore = create<TransactionStoreState>((set, get) => ({
@@ -70,6 +94,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
         error: null,
       });
     } catch (cause) {
+      SecureLogger.error('transactionStore.fetch failed', cause);
       const message =
         cause instanceof Error ? cause.message : 'Failed to load transactions';
       set({ loading: false, error: message });
@@ -86,6 +111,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
         error: null,
       });
     } catch (cause) {
+      SecureLogger.error('transactionStore.refresh failed', cause);
       const message =
         cause instanceof Error ? cause.message : 'Failed to load transactions';
       set({ isRefreshing: false, error: message });
@@ -109,16 +135,17 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
     return fetched;
   },
 
-  addTransaction: async (input: NewTransactionInput) => {
-    const { balance } = get();
-    if (!canAfford(balance, input.amount)) {
-      throw new InsufficientFundsError();
-    }
-    const created = await transactionRepository.addTransaction(input);
-    set((state) =>
-      withBalance(sortTransactions([created, ...state.transactions])),
+  addTransaction: (input: NewTransactionInput) => {
+    const run = addTransactionUnlocked(input, get, set);
+    const gated = addTransactionChain.then(
+      () => run,
+      () => run,
     );
-    return created;
+    addTransactionChain = gated.then(
+      () => undefined,
+      () => undefined,
+    );
+    return gated;
   },
 
   cancelScheduled: async (refId: string) => {
@@ -159,6 +186,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
 }));
 
 export function resetTransactionStore(): void {
+  addTransactionChain = Promise.resolve();
   useTransactionStore.setState({
     transactions: [],
     loading: false,

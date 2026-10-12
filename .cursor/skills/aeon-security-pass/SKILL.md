@@ -1,6 +1,9 @@
 ---
 name: aeon-security-pass
-description: Scan AEON Bank Transactions for PII logging, unsafe share payloads, secret exposure, and SecureStore misuse. Use before submission.
+description: >-
+  Read-only scan of AEON Bank Transactions for PII logging, unsafe share
+  payloads, secret exposure, and SecureStore misuse. Use before submission or
+  inside aeon-verifier. For implementing fixes, use agent aeon-security instead.
 ---
 
 # Security pass

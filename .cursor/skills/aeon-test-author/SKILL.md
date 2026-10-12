@@ -1,6 +1,9 @@
 ---
 name: aeon-test-author
-description: Author or gap-check unit, mock, RNTL, and Detox tests for AEON Bank Transactions. Use when adding features or reviewing test coverage.
+description: >-
+  Author or gap-check unit, mock, RNTL, and Detox tests for AEON Bank
+  Transactions. Use when adding features, reviewing coverage, or with agent
+  aeon-tests / aeon-submission-polish stream 4.
 ---
 
 # Test author

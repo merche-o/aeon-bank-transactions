@@ -10,6 +10,7 @@ import { EmptyState } from '../widgets/EmptyState';
 import { LoadingState } from '../widgets/LoadingState';
 import { RecipientRow } from '../widgets/RecipientRow';
 import { SearchBar } from '../widgets/SearchBar';
+import { SegmentToggle } from '../widgets/SegmentToggle';
 
 export function PaymentStartView() {
   const navigation = useNavigation();
@@ -32,29 +33,24 @@ export function PaymentStartView() {
       testID="payment-start-screen"
     >
       <View style={{ marginHorizontal: spacing.lg, marginTop: spacing.md }}>
-        <View
-          style={[
-            styles.segmentRow,
+        <SegmentToggle<'transfer' | 'request'>
+          onChange={vm.setMode}
+          options={[
             {
-              backgroundColor: colors.surface,
-              borderColor: colors.borderSubtle,
-              marginBottom: spacing.md,
+              value: 'transfer',
+              label: vm.labels.transfer,
+              testID: 'payment-start-mode-transfer',
+            },
+            {
+              value: 'request',
+              label: vm.labels.request,
+              testID: 'payment-start-mode-request',
             },
           ]}
-        >
-          <SegmentButton
-            active={vm.mode === 'transfer'}
-            label={vm.labels.transfer}
-            onPress={() => vm.setMode('transfer')}
-            testID="payment-start-mode-transfer"
-          />
-          <SegmentButton
-            active={vm.mode === 'request'}
-            label={vm.labels.request}
-            onPress={() => vm.setMode('request')}
-            testID="payment-start-mode-request"
-          />
-        </View>
+          testID="payment-start-mode"
+          value={vm.mode}
+          variant="segmented"
+        />
       </View>
 
       <SearchBar
@@ -73,6 +69,7 @@ export function PaymentStartView() {
             borderColor: colors.primary,
             marginHorizontal: spacing.lg,
             marginBottom: spacing.sm,
+            marginTop: spacing.md,
             opacity: pressed ? 0.9 : 1,
             paddingVertical: spacing.md,
           },
@@ -113,49 +110,6 @@ export function PaymentStartView() {
   );
 }
 
-function SegmentButton({
-  label,
-  active,
-  onPress,
-  testID,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  testID: string;
-}) {
-  const theme = useTheme();
-  const { colors, spacing, typography } = theme;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.segmentButton,
-        {
-          backgroundColor: active ? colors.primary : 'transparent',
-          opacity: pressed ? 0.92 : 1,
-          paddingVertical: spacing.sm,
-        },
-      ]}
-      testID={testID}
-    >
-      <Text
-        style={{
-          color: active ? colors.textInverse : colors.textPrimary,
-          fontSize: typography.fontSize.sm,
-          fontWeight: typography.fontWeight.semibold,
-          textAlign: 'center',
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   addButton: {
     borderRadius: 12,
@@ -166,15 +120,5 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
-  },
-  segmentButton: {
-    borderRadius: 10,
-    flex: 1,
-  },
-  segmentRow: {
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    padding: 4,
   },
 });

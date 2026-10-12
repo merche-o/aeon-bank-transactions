@@ -6,6 +6,7 @@ export type TranslationKey =
   | 'list.noMatchingResults'
   | 'list.hello'
   | 'list.balance'
+  | 'list.pendingIncoming'
   | 'list.refresh'
   | 'list.add'
   | 'detail.title'
@@ -105,6 +106,9 @@ export type TranslationKey =
   | 'pay.addNewRecipient'
   | 'pay.searchRecipients'
   | 'pay.amount'
+  | 'pay.amountPlaceholder'
+  | 'pay.sending'
+  | 'pay.saving'
   | 'pay.sendNow'
   | 'pay.schedule'
   | 'pay.scheduleDate'
@@ -165,6 +169,8 @@ export type TranslationKey =
   | 'budget.percentSuffix'
   | 'customer.default'
   | 'fab.openActions'
-  | 'fab.closeActions';
+  | 'fab.closeActions'
+  | 'app.sqliteFallback'
+  | 'privacy.inactiveCover';
 
 export type Dictionary = Record<TranslationKey, string>;

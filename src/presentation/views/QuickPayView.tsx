@@ -1,12 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
-import { useLayoutEffect, type ReactNode } from 'react';
+import { useLayoutEffect } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +19,8 @@ import {
 } from '../viewmodels/useQuickPayViewModel';
 import { CategorySelectChips } from '../widgets/CategorySelectChips';
 import { DateField } from '../widgets/DateField';
+import { FormField } from '../widgets/FormField';
+import { SegmentToggle } from '../widgets/SegmentToggle';
 import { StateMessage } from '../widgets/StateMessage';
 
 export type QuickPayViewProps = {
@@ -45,8 +48,9 @@ export function QuickPayView({ recipientId }: QuickPayViewProps) {
     );
   }
 
-  const confirmLabel =
-    vm.timing === 'now' ? vm.labels.confirmSend : vm.labels.confirmSchedule;
+  const bannerMessage =
+    vm.submitError ??
+    (vm.showInsufficientFunds ? vm.insufficientFundsMessage : null);
 
   return (
     <SafeAreaView
@@ -54,186 +58,133 @@ export function QuickPayView({ recipientId }: QuickPayViewProps) {
       style={[styles.flex, { backgroundColor: colors.background }]}
       testID="quick-pay-screen"
     >
-      <ScrollView
-        contentContainerStyle={{
-          paddingBottom: spacing.xxxl,
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.lg,
-        }}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
       >
-        <TimingToggle
-          onChange={vm.setTiming}
-          scheduleLabel={vm.labels.schedule}
-          sendNowLabel={vm.labels.sendNow}
-          timing={vm.timing}
-        />
-
-        <Field label={vm.labels.amount}>
-          <TextInput
-            keyboardType="decimal-pad"
-            onChangeText={vm.setAmountText}
-            placeholder="0.00"
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors, typography)}
-            testID="quick-pay-amount"
-            value={vm.amountText}
-          />
-        </Field>
-
-        <Field label={vm.labels.transferName}>
-          <TextInput
-            onChangeText={vm.setTransferNameDraft}
-            placeholder={vm.transferTitle}
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors, typography)}
-            testID="quick-pay-transfer-name"
-            value={vm.transferNameDraft}
-          />
-        </Field>
-
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: typography.fontSize.sm,
-            fontWeight: typography.fontWeight.medium,
-            marginBottom: spacing.sm,
-            marginTop: spacing.md,
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: spacing.xxxl,
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.lg,
           }}
+          keyboardShouldPersistTaps="handled"
         >
-          {vm.labels.category}
-        </Text>
-        <CategorySelectChips
-          locale={vm.locale}
-          onChange={vm.setCategory}
-          testIDPrefix="quick-pay-category"
-          value={vm.category}
-        />
-
-        {vm.timing === 'schedule' ? (
-          <DateField
-            label={vm.labels.scheduleDate}
-            minimumDate={vm.minimumScheduleDate}
-            onChange={vm.setScheduleDateIso}
-            testID="quick-pay-schedule-date"
-            valueIso={vm.scheduleDateIso}
-          />
-        ) : null}
-
-        {vm.showInsufficientFunds ? (
-          <Text
-            style={{
-              color: colors.error,
-              fontSize: typography.fontSize.sm,
-              marginTop: spacing.lg,
-            }}
-            testID="insufficient-funds-banner"
-          >
-            {vm.insufficientFundsMessage}
-          </Text>
-        ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={!vm.canConfirm}
-          onPress={() => void vm.confirm()}
-          style={({ pressed }) => [
-            styles.confirmButton,
-            {
-              backgroundColor: vm.canConfirm ? colors.primary : colors.borderSubtle,
-              marginTop: spacing.xl,
-              opacity: pressed && vm.canConfirm ? 0.9 : 1,
-              paddingVertical: spacing.lg,
-            },
-          ]}
-          testID="quick-pay-confirm"
-        >
-          <Text
-            style={{
-              color: vm.canConfirm ? colors.textInverse : colors.textMuted,
-              fontSize: typography.fontSize.md,
-              fontWeight: typography.fontWeight.semibold,
-              textAlign: 'center',
-            }}
-          >
-            {confirmLabel}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function TimingToggle({
-  timing,
-  onChange,
-  sendNowLabel,
-  scheduleLabel,
-}: {
-  timing: PayTiming;
-  onChange: (value: PayTiming) => void;
-  sendNowLabel: string;
-  scheduleLabel: string;
-}) {
-  const theme = useTheme();
-  const { colors, spacing, typography } = theme;
-
-  return (
-    <View style={[styles.timingRow, { gap: spacing.sm, marginBottom: spacing.md }]}>
-      {(['now', 'schedule'] as const).map((option) => {
-        const selected = timing === option;
-        return (
-          <Pressable
-            key={option}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            onPress={() => onChange(option)}
-            style={[
-              styles.timingChip,
+          <SegmentToggle<PayTiming>
+            onChange={vm.setTiming}
+            options={[
               {
-                backgroundColor: selected ? colors.primarySubtle : colors.surface,
-                borderColor: selected ? colors.primary : colors.borderSubtle,
-                flex: 1,
-                paddingVertical: spacing.md,
+                value: 'now',
+                label: vm.labels.sendNow,
+                testID: 'quick-pay-timing-now',
+              },
+              {
+                value: 'schedule',
+                label: vm.labels.schedule,
+                testID: 'quick-pay-timing-schedule',
               },
             ]}
-            testID={`quick-pay-timing-${option}`}
+            testID="quick-pay-timing"
+            value={vm.timing}
+            variant="chips"
+          />
+
+          <FormField label={vm.labels.amount}>
+            <TextInput
+              keyboardType="decimal-pad"
+              onChangeText={vm.setAmountText}
+              placeholder={vm.labels.amountPlaceholder}
+              placeholderTextColor={colors.textMuted}
+              style={inputStyle(colors, typography)}
+              testID="quick-pay-amount"
+              value={vm.amountText}
+            />
+          </FormField>
+
+          <FormField label={vm.labels.transferName}>
+            <TextInput
+              onChangeText={vm.setTransferNameDraft}
+              placeholder={vm.transferTitle}
+              placeholderTextColor={colors.textMuted}
+              style={inputStyle(colors, typography)}
+              testID="quick-pay-transfer-name"
+              value={vm.transferNameDraft}
+            />
+          </FormField>
+
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.medium,
+              marginBottom: spacing.sm,
+              marginTop: spacing.md,
+            }}
+          >
+            {vm.labels.category}
+          </Text>
+          <CategorySelectChips
+            locale={vm.locale}
+            onChange={vm.setCategory}
+            testIDPrefix="quick-pay-category"
+            value={vm.category}
+          />
+
+          {vm.timing === 'schedule' ? (
+            <DateField
+              label={vm.labels.scheduleDate}
+              minimumDate={vm.minimumScheduleDate}
+              onChange={vm.setScheduleDateIso}
+              testID="quick-pay-schedule-date"
+              valueIso={vm.scheduleDateIso}
+            />
+          ) : null}
+
+          {bannerMessage ? (
+            <Text
+              style={{
+                color: colors.error,
+                fontSize: typography.fontSize.sm,
+                marginTop: spacing.lg,
+              }}
+              testID="insufficient-funds-banner"
+            >
+              {bannerMessage}
+            </Text>
+          ) : null}
+
+          <Pressable
+            accessibilityLabel={vm.confirmLabel}
+            accessibilityRole="button"
+            disabled={!vm.canConfirm}
+            onPress={() => void vm.confirm()}
+            style={({ pressed }) => [
+              styles.confirmButton,
+              {
+                backgroundColor: vm.canConfirm
+                  ? colors.primary
+                  : colors.borderSubtle,
+                marginTop: spacing.xl,
+                opacity: pressed && vm.canConfirm ? 0.9 : 1,
+                paddingVertical: spacing.lg,
+              },
+            ]}
+            testID="quick-pay-confirm"
           >
             <Text
               style={{
-                color: selected ? colors.primaryMuted : colors.textSecondary,
-                fontSize: typography.fontSize.sm,
+                color: vm.canConfirm ? colors.textInverse : colors.textMuted,
+                fontSize: typography.fontSize.md,
                 fontWeight: typography.fontWeight.semibold,
                 textAlign: 'center',
               }}
             >
-              {option === 'now' ? sendNowLabel : scheduleLabel}
+              {vm.confirmLabel}
             </Text>
           </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  const theme = useTheme();
-  const { colors, spacing, typography } = theme;
-
-  return (
-    <View style={{ marginTop: spacing.md }}>
-      <Text
-        style={{
-          color: colors.textSecondary,
-          fontSize: typography.fontSize.sm,
-          fontWeight: typography.fontWeight.medium,
-          marginBottom: spacing.xs,
-        }}
-      >
-        {label}
-      </Text>
-      {children}
-    </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -258,12 +209,5 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
-  },
-  timingChip: {
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  timingRow: {
-    flexDirection: 'row',
   },
 });

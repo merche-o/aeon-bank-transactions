@@ -7,6 +7,7 @@ import type {
 } from '@/models/PaymentRequest';
 import { MockPaymentRequestRepository } from '@/repositories/MockPaymentRequestRepository';
 import type { PaymentRequestRepository } from '@/repositories/PaymentRequestRepository';
+import { SecureLogger } from '@/security/SecureLogger';
 import { getPaymentProcessingService } from '@/services/PaymentProcessingService';
 
 import { usePreferencesStore } from './preferencesStore';
@@ -48,6 +49,7 @@ export const usePaymentRequestStore = create<PaymentRequestStoreState>((set) => 
       const paymentRequests = await paymentRequestRepository.list();
       set({ paymentRequests, loading: false, error: null });
     } catch (cause) {
+      SecureLogger.error('paymentRequestStore.fetch failed', cause);
       const message =
         cause instanceof Error
           ? cause.message
