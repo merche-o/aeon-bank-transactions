@@ -7,11 +7,27 @@ export type TransactionsStackParamList = {
   TransactionList: undefined;
   TransactionDetail: { refId: string };
   AddTransaction: undefined;
+  PaymentStart: { mode?: 'transfer' | 'request' } | undefined;
+  QuickPay: { recipientId: string };
+  RequestPay: { recipientId: string };
+  AddRecipient: undefined;
   Profile: undefined;
+};
+
+export type RecipientsStackParamList = {
+  RecipientList: undefined;
+  RecipientDetail: { recipientId: string };
+  TransactionDetail: { refId: string };
+  AddRecipient: undefined;
+  QuickPay: { recipientId: string };
+  RequestPay: { recipientId: string };
+  ScheduledList: undefined;
+  PaymentRequestsList: undefined;
 };
 
 export type MainTabParamList = {
   TransactionsTab: NavigatorScreenParams<TransactionsStackParamList> | undefined;
+  RecipientsTab: NavigatorScreenParams<RecipientsStackParamList> | undefined;
   BudgetTab: undefined;
 };
 
@@ -21,6 +37,9 @@ export type DrawerParamList = {
 
 export type TransactionsStackNavigationProp =
   NativeStackNavigationProp<TransactionsStackParamList>;
+
+export type RecipientsStackNavigationProp =
+  NativeStackNavigationProp<RecipientsStackParamList>;
 
 export type TransactionListNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<TransactionsStackParamList, 'TransactionList'>,

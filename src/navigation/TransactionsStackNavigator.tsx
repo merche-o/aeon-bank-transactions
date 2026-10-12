@@ -1,8 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { AddRecipientView } from '@/presentation/views/AddRecipientView';
 import { AddTransactionView } from '@/presentation/views/AddTransactionView';
+import { PaymentStartView } from '@/presentation/views/PaymentStartView';
 import { ProfileSettingsView } from '@/presentation/views/ProfileSettingsView';
+import { QuickPayView } from '@/presentation/views/QuickPayView';
+import { RequestPayView } from '@/presentation/views/RequestPayView';
 import { TransactionDetailView } from '@/presentation/views/TransactionDetailView';
 import { TransactionListView } from '@/presentation/views/TransactionListView';
 import { useTheme } from '@/theme';
@@ -19,6 +23,8 @@ export function TransactionsStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         contentStyle: { backgroundColor: colors.background },
+        headerBackButtonDisplayMode: 'minimal',
+        headerBackTitle: '',
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.primary,
@@ -41,6 +47,14 @@ export function TransactionsStackNavigator() {
         options={{ headerShown: true }}
       />
       <Stack.Screen
+        component={PaymentStartView}
+        name="PaymentStart"
+        options={{ headerShown: true }}
+      />
+      <Stack.Screen component={TransactionsQuickPayScreen} name="QuickPay" />
+      <Stack.Screen component={TransactionsRequestPayScreen} name="RequestPay" />
+      <Stack.Screen component={AddRecipientView} name="AddRecipient" />
+      <Stack.Screen
         component={ProfileSettingsView}
         name="Profile"
         options={{ headerShown: true }}
@@ -53,4 +67,16 @@ function TransactionDetailScreen({
   route,
 }: NativeStackScreenProps<TransactionsStackParamList, 'TransactionDetail'>) {
   return <TransactionDetailView refId={route.params.refId} />;
+}
+
+function TransactionsQuickPayScreen({
+  route,
+}: NativeStackScreenProps<TransactionsStackParamList, 'QuickPay'>) {
+  return <QuickPayView recipientId={route.params.recipientId} />;
+}
+
+function TransactionsRequestPayScreen({
+  route,
+}: NativeStackScreenProps<TransactionsStackParamList, 'RequestPay'>) {
+  return <RequestPayView recipientId={route.params.recipientId} />;
 }

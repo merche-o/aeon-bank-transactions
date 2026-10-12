@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { PlatformPressable } from '@react-navigation/elements';
 import { Text } from 'react-native';
@@ -7,6 +8,7 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 import { t } from '@/i18n';
 
+import { RecipientsStackNavigator } from './RecipientsStackNavigator';
 import { TransactionsStackNavigator } from './TransactionsStackNavigator';
 import type { MainTabParamList } from './types';
 
@@ -37,6 +39,13 @@ export function MainTabNavigator() {
         component={TransactionsStackNavigator}
         name="TransactionsTab"
         options={{
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              color={color}
+              name={focused ? 'list' : 'list-outline'}
+              size={size}
+            />
+          ),
           tabBarLabel: ({ color }) => (
             <Text style={{ color, fontSize: typography.fontSize.xs }}>
               {t('tabs.transactions', locale)}
@@ -48,9 +57,37 @@ export function MainTabNavigator() {
         }}
       />
       <Tab.Screen
+        component={RecipientsStackNavigator}
+        name="RecipientsTab"
+        options={{
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              color={color}
+              name={focused ? 'people' : 'people-outline'}
+              size={size}
+            />
+          ),
+          tabBarLabel: ({ color }) => (
+            <Text style={{ color, fontSize: typography.fontSize.xs }}>
+              {t('tabs.recipients', locale)}
+            </Text>
+          ),
+          tabBarButton: (props) => (
+            <PlatformPressable {...props} testID="tab-recipients" />
+          ),
+        }}
+      />
+      <Tab.Screen
         component={BudgetView}
         name="BudgetTab"
         options={{
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              color={color}
+              name={focused ? 'pie-chart' : 'pie-chart-outline'}
+              size={size}
+            />
+          ),
           tabBarLabel: ({ color }) => (
             <Text style={{ color, fontSize: typography.fontSize.xs }}>
               {t('tabs.budget', locale)}
