@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
 
@@ -29,6 +30,7 @@ export function ActionFab({
   accessibilityLabelClose,
 }: ActionFabProps) {
   const [expanded, setExpanded] = useState(false);
+  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
 
@@ -46,7 +48,7 @@ export function ActionFab({
     [collapse],
   );
 
-  const bottom = FAB_MARGIN + bottomOffset;
+  const bottom = FAB_MARGIN + insets.bottom + bottomOffset;
 
   return (
     <>
@@ -117,7 +119,7 @@ export function ActionFab({
         >
           <Ionicons
             color={colors.textInverse}
-            name={expanded ? 'close' : 'add'}
+            name={expanded ? 'close' : 'swap-horizontal'}
             size={28}
           />
         </Pressable>

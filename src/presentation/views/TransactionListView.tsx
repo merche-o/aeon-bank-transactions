@@ -26,7 +26,7 @@ import type { DaySection } from '@/utils/groupTransactionsByDay';
 import { DaySeparator } from '../widgets/DaySeparator';
 import { TransactionCard } from '../widgets/TransactionCard';
 
-const TAB_BAR_FAB_OFFSET = 72;
+const TAB_BAR_FAB_OFFSET = 56;
 
 export function TransactionListView() {
   const vm = useTransactionListViewModel();

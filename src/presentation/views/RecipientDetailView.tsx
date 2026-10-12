@@ -18,7 +18,7 @@ export type RecipientDetailViewProps = {
   recipientId: string;
 };
 
-const TAB_BAR_FAB_OFFSET = 72;
+const TAB_BAR_FAB_OFFSET = 56;
 
 export function RecipientDetailView({ recipientId }: RecipientDetailViewProps) {
   const navigation = useNavigation();
