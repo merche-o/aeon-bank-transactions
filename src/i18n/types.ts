@@ -1,0 +1,35 @@
+export type Locale = 'en' | 'bm';
+
+export type TranslationKey =
+  | 'list.title'
+  | 'list.searchPlaceholder'
+  | 'list.noMatchingResults'
+  | 'detail.title'
+  | 'detail.reference'
+  | 'detail.amount'
+  | 'detail.date'
+  | 'detail.recipient'
+  | 'detail.transferName'
+  | 'share.button'
+  | 'share.title'
+  | 'filters.typeAll'
+  | 'filters.incoming'
+  | 'filters.outgoing'
+  | 'filters.dateAll'
+  | 'filters.date7d'
+  | 'filters.date30d'
+  | 'loading.transactions'
+  | 'empty.transactions'
+  | 'error.loadFailed'
+  | 'error.generic'
+  | 'retry.button'
+  | 'theme.light'
+  | 'theme.dark'
+  | 'theme.system'
+  | 'language.en'
+  | 'language.bm'
+  | 'language.label'
+  | 'notFound.title'
+  | 'notFound.message';
+
+export type Dictionary = Record<TranslationKey, string>;
