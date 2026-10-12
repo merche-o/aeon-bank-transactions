@@ -3,7 +3,11 @@ import { formatCurrency } from './formatCurrency';
 
 function countsTowardBalance(tx: Transaction): boolean {
   const status = tx.status ?? 'completed';
-  return status === 'completed';
+  if (status === 'completed') {
+    return true;
+  }
+  // Pending incoming (e.g. request money) counts toward available balance.
+  return status === 'pending' && tx.amount >= 0;
 }
 
 export function sumBalance(transactions: Transaction[]): number {

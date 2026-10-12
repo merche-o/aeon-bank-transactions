@@ -4,6 +4,7 @@ import type {
   NewTransactionInput,
   Transaction,
   TransactionCategory,
+  TransactionStatus,
 } from '@/models/Transaction';
 import { MockTransactionRepository } from '@/repositories/MockTransactionRepository';
 import type { TransactionRepository } from '@/repositories/TransactionRepository';
@@ -30,6 +31,8 @@ export interface TransactionStoreState {
   addTransaction: (input: NewTransactionInput) => Promise<Transaction>;
   cancelScheduled: (refId: string) => Promise<void>;
   setCategory: (refId: string, category: TransactionCategory) => Promise<void>;
+  updateStatus: (refId: string, status: TransactionStatus) => Promise<void>;
+  findByPaymentRequestId: (paymentRequestId: string) => Transaction | undefined;
   clearError: () => void;
 }
 
@@ -137,6 +140,20 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
       ),
     }));
   },
+
+  updateStatus: async (refId, status) => {
+    await transactionRepository.updateTransactionStatus(refId, status);
+    set((state) => ({
+      ...withBalance(
+        state.transactions.map((tx) =>
+          tx.refId === refId ? { ...tx, status } : tx,
+        ),
+      ),
+    }));
+  },
+
+  findByPaymentRequestId: (paymentRequestId) =>
+    get().transactions.find((tx) => tx.paymentRequestId === paymentRequestId),
 
   clearError: () => set({ error: null }),
 }));

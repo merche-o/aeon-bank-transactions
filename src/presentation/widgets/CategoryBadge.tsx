@@ -20,7 +20,6 @@ export function CategoryBadge({ category, locale }: CategoryBadgeProps) {
         styles.badge,
         {
           backgroundColor: colors.primarySubtle,
-          marginTop: spacing.xs,
           paddingHorizontal: spacing.sm,
           paddingVertical: spacing.xxs,
         },

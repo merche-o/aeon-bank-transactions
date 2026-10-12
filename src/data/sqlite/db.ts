@@ -71,6 +71,7 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   await addColumnIfMissing(db, 'transactions', 'status', "TEXT DEFAULT 'completed'");
   await addColumnIfMissing(db, 'transactions', 'scheduled_for', 'TEXT');
   await addColumnIfMissing(db, 'transactions', 'recipient_id', 'TEXT');
+  await addColumnIfMissing(db, 'transactions', 'payment_request_id', 'TEXT');
   await addColumnIfMissing(db, 'payment_requests', 'transfer_name', 'TEXT');
   await addColumnIfMissing(
     db,

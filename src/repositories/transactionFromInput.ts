@@ -14,5 +14,6 @@ export function transactionFromInput(
     status: input.status ?? 'completed',
     scheduledFor: input.scheduledFor,
     recipientId: input.recipientId,
+    paymentRequestId: input.paymentRequestId,
   };
 }

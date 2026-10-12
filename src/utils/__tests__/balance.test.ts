@@ -53,6 +53,32 @@ describe('sumBalance', () => {
     ];
     expect(sumBalance(withScheduled)).toBe(750);
   });
+
+  it('includes pending incoming toward balance', () => {
+    const withPending: Transaction[] = [
+      ...txs,
+      {
+        refId: '5',
+        transferDate: '2024-10-04T00:00:00Z',
+        recipientName: 'E',
+        transferName: 'Request',
+        amount: 200,
+        category: 'transfer',
+        status: 'pending',
+        paymentRequestId: 'pr-1',
+      },
+      {
+        refId: '6',
+        transferDate: '2024-10-04T00:00:00Z',
+        recipientName: 'F',
+        transferName: 'Pending out',
+        amount: -50,
+        category: 'transfer',
+        status: 'pending',
+      },
+    ];
+    expect(sumBalance(withPending)).toBe(950);
+  });
 });
 
 describe('canAfford', () => {

@@ -153,6 +153,13 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
             testID="detail-category"
             value={vm.categoryLabel}
           />
+          {vm.statusLabel ? (
+            <DetailRow
+              label={vm.labels.status}
+              testID="detail-status"
+              value={vm.statusLabel}
+            />
+          ) : null}
         </View>
 
         <View style={{ marginTop: spacing.lg }}>

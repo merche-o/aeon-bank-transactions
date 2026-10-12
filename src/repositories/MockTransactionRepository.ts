@@ -3,6 +3,7 @@ import type {
   NewTransactionInput,
   Transaction,
   TransactionCategory,
+  TransactionStatus,
 } from '../models/Transaction';
 import { promoteDueScheduledTransactions } from '../utils/schedule';
 
@@ -57,6 +58,20 @@ export class MockTransactionRepository implements TransactionRepository {
     await this.wait();
     this.items = this.items.map((item) =>
       item.refId === refId ? { ...item, category } : item,
+    );
+  }
+
+  async updateTransactionStatus(
+    refId: string,
+    status: TransactionStatus,
+  ): Promise<void> {
+    await this.wait();
+    const item = this.items.find((tx) => tx.refId === refId);
+    if (!item) {
+      throw new Error('TRANSACTION_NOT_FOUND');
+    }
+    this.items = this.items.map((tx) =>
+      tx.refId === refId ? { ...tx, status } : tx,
     );
   }
 

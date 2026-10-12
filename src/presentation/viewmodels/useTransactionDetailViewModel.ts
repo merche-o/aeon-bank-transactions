@@ -64,12 +64,16 @@ export function useTransactionDetailViewModel(refId: string) {
   const categoryLabel =
     transaction != null ? getCategoryLabel(transaction.category, locale) : '';
 
+  const statusLabel =
+    transaction?.status === 'pending' ? t('status.pending', locale) : null;
+
   return {
     locale,
     transaction,
     share,
     updateCategory,
     categoryLabel,
+    statusLabel,
     labels: {
       title: t('detail.title', locale),
       reference: t('detail.reference', locale),
@@ -78,6 +82,7 @@ export function useTransactionDetailViewModel(refId: string) {
       transferName: t('detail.transferName', locale),
       amount: t('detail.amount', locale),
       category: t('detail.category', locale),
+      status: t('detail.status', locale),
       shareButton: t('share.button', locale),
       notFoundTitle: t('notFound.title', locale),
       notFoundMessage: t('notFound.message', locale),
