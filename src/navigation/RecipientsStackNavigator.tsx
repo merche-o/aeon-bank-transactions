@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AddRecipientView } from '@/presentation/views/AddRecipientView';
+import { PaymentConfirmView } from '@/presentation/views/PaymentConfirmView';
 import { PaymentRequestsListView } from '@/presentation/views/PaymentRequestsListView';
 import { QuickPayView } from '@/presentation/views/QuickPayView';
 import { RecipientDetailView } from '@/presentation/views/RecipientDetailView';
@@ -44,6 +45,11 @@ export function RecipientsStackNavigator() {
       <Stack.Screen component={AddRecipientView} name="AddRecipient" />
       <Stack.Screen component={QuickPayScreen} name="QuickPay" />
       <Stack.Screen component={RequestPayScreen} name="RequestPay" />
+      <Stack.Screen
+        component={PaymentConfirmView}
+        name="PaymentConfirm"
+        options={{ gestureEnabled: false }}
+      />
       <Stack.Screen
         component={RecipientTransactionDetailScreen}
         name="TransactionDetail"

@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { t } from '@/i18n';
 import type { Locale } from '@/i18n/types';
 import type { Transaction } from '@/models/Transaction';
 import { useTheme } from '@/theme';
@@ -17,6 +18,7 @@ export type TransactionCardProps = {
 export function TransactionCard({ transaction, onPress, locale }: TransactionCardProps) {
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
+  const isPending = transaction.status === 'pending';
 
   return (
     <Pressable
@@ -66,7 +68,32 @@ export function TransactionCard({ transaction, onPress, locale }: TransactionCar
           >
             {formatDate(transaction.transferDate)}
           </Text>
-          <CategoryBadge category={transaction.category} locale={locale} />
+          <View style={[styles.badges, { marginTop: spacing.xs, gap: spacing.xs }]}>
+            <CategoryBadge category={transaction.category} locale={locale} />
+            {isPending ? (
+              <View
+                style={[
+                  styles.pendingBadge,
+                  {
+                    backgroundColor: colors.primarySubtle,
+                    paddingHorizontal: spacing.sm,
+                    paddingVertical: spacing.xxs,
+                  },
+                ]}
+                testID={`pending-badge-${transaction.refId}`}
+              >
+                <Text
+                  style={{
+                    color: colors.accent,
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.medium,
+                  }}
+                >
+                  {t('status.pending', locale)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
         <AmountText amount={transaction.amount} />
       </View>
@@ -75,6 +102,11 @@ export function TransactionCard({ transaction, onPress, locale }: TransactionCar
 }
 
 const styles = StyleSheet.create({
+  badges: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   card: {
     borderRadius: 12,
     borderWidth: 1,
@@ -82,6 +114,10 @@ const styles = StyleSheet.create({
   main: {
     flex: 1,
     marginRight: 12,
+  },
+  pendingBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 6,
   },
   row: {
     alignItems: 'center',

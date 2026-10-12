@@ -20,9 +20,19 @@ export {
   type BudgetCategoryLegendProps,
 } from './BudgetCategoryLegend';
 export {
+  BudgetCategoryBreakdown,
+  type BudgetCategoryBreakdownRow,
+  type BudgetCategoryBreakdownProps,
+} from './BudgetCategoryBreakdown';
+export {
   BudgetTopRecipients,
   type BudgetTopRecipientRow,
   type BudgetTopRecipientsProps,
 } from './BudgetTopRecipients';
+export {
+  BudgetTopFlows,
+  type BudgetTopFlowRow,
+  type BudgetTopFlowsProps,
+} from './BudgetTopFlows';
 export { BudgetMonthOutlook, type BudgetMonthOutlookProps } from './BudgetMonthOutlook';
 export { BudgetEmptyState, type BudgetEmptyStateProps } from './BudgetEmptyState';

@@ -11,6 +11,15 @@ import type { Locale } from '@/i18n/types';
 import { useTheme } from '@/theme';
 
 import { CustomDateRangeFields } from './CustomDateRangeFields';
+import { calendarDayToIso, dateToCalendarIso } from './DateField';
+
+function defaultCustomRange(): { start: string; end: string } {
+  const now = new Date();
+  return {
+    start: calendarDayToIso(now.getFullYear(), now.getMonth(), 1),
+    end: dateToCalendarIso(now),
+  };
+}
 
 export type DateRangePresetOption<T extends string> = {
   value: T;
@@ -64,6 +73,8 @@ export function DateRangePickerSheet<T extends string>({
     }
   }, [visible, value]);
 
+  const canApplyCustom = Boolean(customStart && customEnd);
+
   return (
     <Modal
       animationType="slide"
@@ -112,6 +123,16 @@ export function DateRangePickerSheet<T extends string>({
                   if (preset.value !== customValue) {
                     onSelectPreset(preset.value);
                     onClose();
+                    return;
+                  }
+                  if (!customStart || !customEnd) {
+                    const defaults = defaultCustomRange();
+                    if (!customStart) {
+                      onChangeStart(defaults.start);
+                    }
+                    if (!customEnd) {
+                      onChangeEnd(defaults.end);
+                    }
                   }
                 }}
                 style={({ pressed }) => [
@@ -152,7 +173,12 @@ export function DateRangePickerSheet<T extends string>({
               />
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={{ disabled: !canApplyCustom }}
+                disabled={!canApplyCustom}
                 onPress={() => {
+                  if (!canApplyCustom) {
+                    return;
+                  }
                   onSelectPreset(customValue);
                   onClose();
                 }}
@@ -162,7 +188,7 @@ export function DateRangePickerSheet<T extends string>({
                     backgroundColor: colors.primary,
                     marginHorizontal: spacing.lg,
                     marginTop: spacing.sm,
-                    opacity: pressed ? 0.9 : 1,
+                    opacity: !canApplyCustom ? 0.45 : pressed ? 0.9 : 1,
                     paddingVertical: spacing.md,
                   },
                 ]}

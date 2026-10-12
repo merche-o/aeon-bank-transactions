@@ -5,11 +5,11 @@ import type {
   TransactionCategory,
   TransactionStatus,
 } from '../models/Transaction';
-import { isTransactionCategory } from '../models/Transaction';
 import {
   promoteDueScheduledTransactions,
   transactionWasPromoted,
 } from '../utils/schedule';
+import { normalizeTransactionCategory } from '../utils/categories';
 
 import type { TransactionRepository } from './TransactionRepository';
 import { transactionFromInput } from './transactionFromInput';
@@ -24,17 +24,23 @@ type Row = {
   status: string | null;
   scheduled_for: string | null;
   recipient_id: string | null;
+  payment_request_id: string | null;
 };
 
 function parseStatus(value: string | null): TransactionStatus {
-  if (value === 'scheduled' || value === 'cancelled' || value === 'completed') {
+  if (
+    value === 'scheduled' ||
+    value === 'cancelled' ||
+    value === 'completed' ||
+    value === 'pending'
+  ) {
     return value;
   }
   return 'completed';
 }
 
 function mapRow(row: Row): Transaction {
-  const category = isTransactionCategory(row.category) ? row.category : 'other';
+  const category = normalizeTransactionCategory(row.category);
   return {
     refId: row.ref_id,
     transferDate: row.transfer_date,
@@ -45,6 +51,7 @@ function mapRow(row: Row): Transaction {
     status: parseStatus(row.status),
     scheduledFor: row.scheduled_for ?? undefined,
     recipientId: row.recipient_id ?? undefined,
+    paymentRequestId: row.payment_request_id ?? undefined,
   };
 }
 
@@ -101,8 +108,8 @@ export class SqliteTransactionRepository implements TransactionRepository {
     const created = transactionFromInput(refId, input);
     await db.runAsync(
       `INSERT INTO transactions
-        (ref_id, transfer_date, recipient_name, transfer_name, amount, category, status, scheduled_for, recipient_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (ref_id, transfer_date, recipient_name, transfer_name, amount, category, status, scheduled_for, recipient_id, payment_request_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         created.refId,
         created.transferDate,
@@ -113,6 +120,7 @@ export class SqliteTransactionRepository implements TransactionRepository {
         created.status,
         created.scheduledFor ?? null,
         created.recipientId ?? null,
+        created.paymentRequestId ?? null,
       ],
     );
     return created;
@@ -125,6 +133,24 @@ export class SqliteTransactionRepository implements TransactionRepository {
     const db = await getDatabase();
     await db.runAsync(`UPDATE transactions SET category = ? WHERE ref_id = ?`, [
       category,
+      refId,
+    ]);
+  }
+
+  async updateTransactionStatus(
+    refId: string,
+    status: TransactionStatus,
+  ): Promise<void> {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Row>(
+      `SELECT * FROM transactions WHERE ref_id = ?`,
+      [refId],
+    );
+    if (!row) {
+      throw new Error('TRANSACTION_NOT_FOUND');
+    }
+    await db.runAsync(`UPDATE transactions SET status = ? WHERE ref_id = ?`, [
+      status,
       refId,
     ]);
   }

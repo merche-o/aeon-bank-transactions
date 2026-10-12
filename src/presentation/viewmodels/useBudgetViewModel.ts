@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
+import { useCallback, useMemo, useState } from 'react';
 
 import { t } from '@/i18n';
 import {
@@ -6,13 +8,14 @@ import {
   type CategoryFilter,
   type TransactionCategory,
 } from '@/models/Transaction';
+import type { DrawerParamList } from '@/navigation/types';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTransactionStore } from '@/store/transactionStore';
 import {
   aggregateCategorySpend,
   aggregateMonthTotals,
   aggregateMonthlySpend,
-  aggregateTopRecipients,
+  aggregateTopCounterparties,
   filterBudgetTransactions,
   periodOverPeriodChange,
   priorRangeOfEqualLength,
@@ -80,10 +83,34 @@ function tryResolveRange(
   }
 }
 
+function periodSummaryLabel(
+  period: BudgetPeriodPreset,
+  locale: Parameters<typeof t>[1],
+): string {
+  switch (period) {
+    case 'thisMonth':
+      return t('budget.periodThisMonth', locale);
+    case 'lastMonth':
+      return t('budget.periodLastMonth', locale);
+    case 'last3Months':
+      return t('budget.periodLast3Months', locale);
+    case 'last6Months':
+      return t('budget.periodLast6Months', locale);
+    case 'custom':
+      return t('budget.periodCustom', locale);
+    default: {
+      const _exhaustive: never = period;
+      return String(_exhaustive);
+    }
+  }
+}
+
 export function useBudgetViewModel() {
+  const navigation = useNavigation<DrawerNavigationProp<DrawerParamList>>();
   const locale = usePreferencesStore((state) => state.locale);
   const transactions = useTransactionStore((state) => state.transactions);
   const loading = useTransactionStore((state) => state.loading);
+  const balance = useTransactionStore((state) => state.balance);
 
   const [period, setPeriod] = useState<BudgetPeriodPreset>('thisMonth');
   const [customStart, setCustomStart] = useState('');
@@ -151,20 +178,36 @@ export function useBudgetViewModel() {
   }, [filtered, range]);
 
   const categoryRows = useMemo(() => {
-    return aggregateCategorySpend(filtered).map((row) => ({
-      category: row.category,
-      label: getCategoryLabel(row.category, locale),
-      total: row.total,
-      percent: row.percent,
+    return aggregateCategorySpend(filtered).map((row) => {
+      const percent = Math.round(row.percent);
+      return {
+        category: row.category,
+        label: getCategoryLabel(row.category, locale),
+        total: row.total,
+        percent,
+        formatted: formatCurrency(-row.total),
+        percentLabel: formatPercentLabel(row.percent, locale),
+      };
+    });
+  }, [filtered, locale]);
+
+  const categorySpendTotalFormatted = useMemo(() => {
+    const total = categoryRows.reduce((sum, row) => sum + row.total, 0);
+    return formatCurrency(-total);
+  }, [categoryRows]);
+
+  const topSpendingRows = useMemo(() => {
+    return aggregateTopCounterparties(filtered, 5, 'out').map((row) => ({
+      recipientName: row.recipientName,
       formatted: formatCurrency(-row.total),
       percentLabel: formatPercentLabel(row.percent, locale),
     }));
   }, [filtered, locale]);
 
-  const topRecipientRows = useMemo(() => {
-    return aggregateTopRecipients(filtered, 5).map((row) => ({
+  const topEarningRows = useMemo(() => {
+    return aggregateTopCounterparties(filtered, 5, 'in').map((row) => ({
       recipientName: row.recipientName,
-      formatted: formatCurrency(-row.total),
+      formatted: formatCurrency(row.total),
       percentLabel: formatPercentLabel(row.percent, locale),
     }));
   }, [filtered, locale]);
@@ -210,17 +253,28 @@ export function useBudgetViewModel() {
     selectedCategories,
   ]);
 
+  const openDrawer = useCallback(() => {
+    navigation.openDrawer();
+  }, [navigation]);
+
   const isEmpty = !loading && transactions.length === 0;
   const noMatching = !loading && !isEmpty && (filtered.length === 0 || range === null);
+
+  const thisPeriodLabel = useMemo(
+    () => periodSummaryLabel(period, locale),
+    [period, locale],
+  );
 
   const labels = useMemo(
     () => ({
       title: t('budget.title', locale),
+      balance: t('list.balance', locale),
+      settings: t('common.settings', locale),
       loading: t('budget.loading', locale),
       empty: t('budget.empty', locale),
       noMatching: t('budget.noMatching', locale),
       hero: {
-        thisPeriod: t('budget.thisMonth', locale),
+        thisPeriod: thisPeriodLabel,
         income: t('budget.income', locale),
         expenses: t('budget.expenses', locale),
         net: t('budget.net', locale),
@@ -233,9 +287,11 @@ export function useBudgetViewModel() {
       category: {
         title: t('budget.byCategory', locale),
         empty: t('budget.emptyPlaceholder', locale),
+        totalCaption: t('budget.totalSpend', locale),
       },
-      topRecipients: {
-        title: t('budget.topRecipients', locale),
+      topFlows: {
+        spendingTitle: t('budget.topSpending', locale),
+        earningTitle: t('budget.topEarning', locale),
         empty: t('budget.emptyPlaceholder', locale),
       },
       outlook: {
@@ -261,7 +317,7 @@ export function useBudgetViewModel() {
         dateSummaryCustom: t('filters.dateCustom', locale),
       },
     }),
-    [locale],
+    [locale, thisPeriodLabel],
   );
 
   return {
@@ -277,6 +333,8 @@ export function useBudgetViewModel() {
     setCustomEnd,
     categoryFilter,
     setCategoryFilter,
+    balanceFormatted: formatCurrency(balance),
+    openDrawer,
     incomeFormatted: formatCurrency(totals.income),
     expensesFormatted: formatCurrency(-totals.expense),
     netFormatted: formatCurrency(totals.net),
@@ -284,7 +342,9 @@ export function useBudgetViewModel() {
     vsPriorLabel,
     monthlyBars,
     categoryRows,
-    topRecipientRows,
+    categorySpendTotalFormatted,
+    topSpendingRows,
+    topEarningRows,
     outlookVisible,
     outlook,
     labels,

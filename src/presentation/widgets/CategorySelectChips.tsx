@@ -1,7 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Locale } from '@/i18n/types';
-import { TRANSACTION_CATEGORIES, type TransactionCategory } from '@/models/Transaction';
+import {
+  SELECTABLE_TRANSACTION_CATEGORIES,
+  type TransactionCategory,
+} from '@/models/Transaction';
 import { useTheme } from '@/theme';
 import { getCategoryLabel } from '@/utils/categories';
 
@@ -28,18 +31,20 @@ export function CategorySelectChips({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {TRANSACTION_CATEGORIES.map((cat) => {
+        {SELECTABLE_TRANSACTION_CATEGORIES.map((cat) => {
           const selected = cat === value;
           return (
             <Pressable
               key={cat}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              onPress={() => onChange(cat)}
+              onPress={() => onChange(selected ? 'unknown' : cat)}
               style={({ pressed }) => [
                 styles.chip,
                 {
-                  backgroundColor: selected ? colors.primarySubtle : colors.surface,
+                  backgroundColor: selected
+                    ? colors.primarySubtle
+                    : colors.surface,
                   borderColor: selected ? colors.primary : colors.borderSubtle,
                   opacity: pressed ? 0.88 : 1,
                   paddingHorizontal: spacing.md,

@@ -1,15 +1,15 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   BudgetCashFlowHero,
-  BudgetCategoryDonut,
-  BudgetCategoryLegend,
+  BudgetCategoryBreakdown,
   BudgetEmptyState,
   BudgetIncomeExpenseChart,
   BudgetMonthOutlook,
   BudgetReportControls,
-  BudgetTopRecipients,
+  BudgetTopFlows,
 } from '@/presentation/widgets/budget';
 import { useTheme } from '@/theme';
 
@@ -57,16 +57,55 @@ export function BudgetView() {
           paddingTop: spacing.lg,
         }}
       >
-        <Text
-          style={{
-            color: colors.textPrimary,
-            fontSize: typography.fontSize.xxl,
-            fontWeight: typography.fontWeight.bold,
-            paddingHorizontal: spacing.lg,
-          }}
+        <View
+          style={[
+            styles.headerRow,
+            {
+              marginHorizontal: spacing.lg,
+            },
+          ]}
         >
-          {vm.labels.title}
-        </Text>
+          <View style={styles.headerText}>
+            <Text
+              style={{
+                color: colors.textPrimary,
+                fontSize: typography.fontSize.xxl,
+                fontWeight: typography.fontWeight.bold,
+              }}
+            >
+              {vm.labels.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontSize: typography.fontSize.sm,
+                marginTop: spacing.xxs,
+              }}
+            >
+              {vm.labels.balance}
+            </Text>
+            <Text
+              style={{
+                color: colors.navy,
+                fontSize: typography.fontSize.xxl,
+                fontWeight: typography.fontWeight.bold,
+                marginTop: spacing.xxs,
+              }}
+              testID="budget-balance-amount"
+            >
+              {vm.balanceFormatted}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityLabel={vm.labels.settings}
+            accessibilityRole="button"
+            onPress={vm.openDrawer}
+            style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.8 : 1 }]}
+            testID="budget-settings-button"
+          >
+            <Ionicons color={colors.primary} name="settings-outline" size={24} />
+          </Pressable>
+        </View>
 
         {showReport ? (
           <BudgetReportControls
@@ -108,37 +147,22 @@ export function BudgetView() {
               vsPriorLabel={vm.vsPriorLabel}
             />
 
+            <BudgetCategoryBreakdown
+              emptyLabel={vm.labels.category.empty}
+              rows={categoryWithColors}
+              title={vm.labels.category.title}
+              totalCaption={vm.labels.category.totalCaption}
+              totalFormatted={vm.categorySpendTotalFormatted}
+            />
+
             <BudgetIncomeExpenseChart labels={vm.labels.chart} months={vm.monthlyBars} />
 
-            <View style={[styles.donutSection, { gap: spacing.lg, paddingHorizontal: spacing.lg }]}>
-              <BudgetCategoryDonut
-                centerLabel={vm.labels.category.title}
-                slices={categoryWithColors.map((row) => ({
-                  category: row.category,
-                  color: row.color,
-                  percent: row.percent,
-                  total: row.total,
-                }))}
-              />
-              <View style={styles.legendFlex}>
-                <BudgetCategoryLegend
-                  emptyLabel={vm.labels.category.empty}
-                  rows={categoryWithColors.map((row) => ({
-                    category: row.category,
-                    color: row.color,
-                    formatted: row.formatted,
-                    label: row.label,
-                    percentLabel: row.percentLabel,
-                  }))}
-                  title={vm.labels.category.title}
-                />
-              </View>
-            </View>
-
-            <BudgetTopRecipients
-              emptyLabel={vm.labels.topRecipients.empty}
-              rows={vm.topRecipientRows}
-              title={vm.labels.topRecipients.title}
+            <BudgetTopFlows
+              earningRows={vm.topEarningRows}
+              earningTitle={vm.labels.topFlows.earningTitle}
+              emptyLabel={vm.labels.topFlows.empty}
+              spendingRows={vm.topSpendingRows}
+              spendingTitle={vm.labels.topFlows.spendingTitle}
             />
 
             <BudgetMonthOutlook
@@ -157,14 +181,19 @@ export function BudgetView() {
 }
 
 const styles = StyleSheet.create({
-  donutSection: {
-    alignItems: 'center',
-    flexDirection: 'column',
-  },
   flex: {
     flex: 1,
   },
-  legendFlex: {
-    alignSelf: 'stretch',
+  headerRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  headerText: {
+    flex: 1,
+    marginRight: 12,
+  },
+  iconButton: {
+    padding: 4,
   },
 });

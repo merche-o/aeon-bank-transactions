@@ -46,6 +46,7 @@ function createMockRepository(
     getTransactionByRefId: jest.fn().mockResolvedValue(null),
     addTransaction: jest.fn(),
     updateTransactionCategory: jest.fn().mockResolvedValue(undefined),
+    updateTransactionStatus: jest.fn().mockResolvedValue(undefined),
     cancelScheduledTransaction: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };

@@ -1,5 +1,4 @@
 import type { Transaction, TransactionCategory } from '../models/Transaction';
-import { isExpenseCategory } from './categories';
 
 export type BudgetPeriodPreset =
   | 'thisMonth'
@@ -64,7 +63,11 @@ export interface BudgetTransactionFilter {
 
 function isCompletedTransaction(tx: Transaction): boolean {
   const status = tx.status ?? 'completed';
-  return status === 'completed';
+  if (status === 'completed') {
+    return true;
+  }
+  // Pending incoming (request money) counts toward budget income.
+  return status === 'pending' && tx.amount >= 0;
 }
 
 function categorySetIncludes(
@@ -142,12 +145,51 @@ function shiftUtcMonths(year: number, monthIndex0: number, delta: number): { yea
   return { year: d.getUTCFullYear(), monthIndex0: d.getUTCMonth() };
 }
 
+function utcStartOfCalendarDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
+  );
+}
+
+function utcEndOfCalendarDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999),
+  );
+}
+
 export function resolveBudgetRange(
   preset: BudgetPeriodPreset,
   customStart?: string,
   customEnd?: string,
   now: Date = new Date(),
 ): BudgetRange {
+  if (preset === 'custom') {
+    if (!customStart || !customEnd) {
+      throw new Error('custom preset requires customStart and customEnd');
+    }
+    let startDate = new Date(customStart);
+    let endDate = new Date(customEnd);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new Error('custom preset requires valid dates');
+    }
+    if (startDate.getTime() > endDate.getTime()) {
+      const swap = startDate;
+      startDate = endDate;
+      endDate = swap;
+    }
+
+    const startBound = utcStartOfCalendarDay(startDate);
+    const endBound = utcEndOfCalendarDay(endDate);
+    const firstKey = monthKeyFromUtcDate(startBound);
+    const lastKey = monthKeyFromUtcDate(endBound);
+
+    return {
+      start: startBound.toISOString(),
+      end: endBound.toISOString(),
+      monthKeys: monthKeysInclusive(firstKey, lastKey),
+    };
+  }
+
   const nowY = now.getUTCFullYear();
   const nowM = now.getUTCMonth();
 
@@ -177,18 +219,6 @@ export function resolveBudgetRange(
       const shifted = shiftUtcMonths(nowY, nowM, -5);
       startY = shifted.year;
       startM = shifted.monthIndex0;
-      break;
-    }
-    case 'custom': {
-      if (!customStart || !customEnd) {
-        throw new Error('custom preset requires customStart and customEnd');
-      }
-      const startDate = new Date(customStart);
-      const endDate = new Date(customEnd);
-      startY = startDate.getUTCFullYear();
-      startM = startDate.getUTCMonth();
-      endY = endDate.getUTCFullYear();
-      endM = endDate.getUTCMonth();
       break;
     }
     default: {
@@ -356,9 +386,16 @@ export function aggregateMonthlySpend(
   return aggregateMonthlySpendLegacy(transactions, monthKeysOrCount);
 }
 
+const DEFAULT_CATEGORY_SLICE_LIMIT = 4;
+
+/**
+ * Aggregate outgoing spend by category. When more than `maxSlices` categories
+ * exist, keep the top (maxSlices - 1) and roll the rest into `other`.
+ */
 export function aggregateCategorySpend(
   transactions: Transaction[],
   monthKeyFilter?: string,
+  maxSlices: number = DEFAULT_CATEGORY_SLICE_LIMIT + 1,
 ): CategorySpend[] {
   const map = new Map<TransactionCategory, number>();
 
@@ -369,9 +406,6 @@ export function aggregateCategorySpend(
     if (monthKeyFilter && toMonthKey(tx.transferDate) !== monthKeyFilter) {
       continue;
     }
-    if (!isExpenseCategory(tx.category) && tx.category !== 'other' && tx.category !== 'transfer') {
-      continue;
-    }
     map.set(tx.category, (map.get(tx.category) ?? 0) + Math.abs(tx.amount));
   }
 
@@ -379,25 +413,61 @@ export function aggregateCategorySpend(
     .map(([category, total]) => ({ category, total }))
     .sort((a, b) => b.total - a.total);
 
-  const expenseGrandTotal = rows.reduce((sum, r) => sum + r.total, 0);
-  return rows.map(({ category, total }) => ({
+  const capped = collapseCategorySpendTail(rows, maxSlices);
+  const expenseGrandTotal = capped.reduce((sum, r) => sum + r.total, 0);
+  return capped.map(({ category, total }) => ({
     category,
     total,
     percent: expenseGrandTotal === 0 ? 0 : (total / expenseGrandTotal) * 100,
   }));
 }
 
-export function aggregateTopRecipients(
+export function collapseCategorySpendTail(
+  rows: Array<{ category: TransactionCategory; total: number }>,
+  maxSlices: number = DEFAULT_CATEGORY_SLICE_LIMIT + 1,
+): Array<{ category: TransactionCategory; total: number }> {
+  if (rows.length <= maxSlices || maxSlices < 2) {
+    return rows;
+  }
+
+  const keepCount = maxSlices - 1;
+  const nonOther = rows.filter((row) => row.category !== 'other');
+  const head = nonOther.slice(0, keepCount);
+  const headCategories = new Set(head.map((row) => row.category));
+  const otherTotal = rows
+    .filter((row) => !headCategories.has(row.category))
+    .reduce((sum, row) => sum + row.total, 0);
+
+  if (otherTotal <= 0) {
+    return head;
+  }
+
+  return [...head, { category: 'other' as const, total: otherTotal }].sort(
+    (a, b) => b.total - a.total,
+  );
+}
+
+export type CounterpartyDirection = 'out' | 'in';
+
+export function aggregateTopCounterparties(
   txs: Transaction[],
   limit = 5,
+  direction: CounterpartyDirection = 'out',
 ): RecipientSpend[] {
   const map = new Map<string, number>();
 
   for (const tx of txs) {
-    if (tx.amount >= 0) {
-      continue;
+    if (direction === 'out') {
+      if (tx.amount >= 0) {
+        continue;
+      }
+      map.set(tx.recipientName, (map.get(tx.recipientName) ?? 0) + Math.abs(tx.amount));
+    } else {
+      if (tx.amount <= 0) {
+        continue;
+      }
+      map.set(tx.recipientName, (map.get(tx.recipientName) ?? 0) + tx.amount);
     }
-    map.set(tx.recipientName, (map.get(tx.recipientName) ?? 0) + Math.abs(tx.amount));
   }
 
   const allRows = [...map.entries()]
@@ -410,6 +480,14 @@ export function aggregateTopRecipients(
     total,
     percent: grandTotal === 0 ? 0 : (total / grandTotal) * 100,
   }));
+}
+
+/** @deprecated Prefer aggregateTopCounterparties(txs, limit, 'out') */
+export function aggregateTopRecipients(
+  txs: Transaction[],
+  limit = 5,
+): RecipientSpend[] {
+  return aggregateTopCounterparties(txs, limit, 'out');
 }
 
 export function projectMonthSpend(spentToDate: number, now: Date = new Date()): MonthSpendProjection {

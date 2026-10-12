@@ -7,6 +7,7 @@ import type { RecipientsStackNavigationProp } from '@/navigation/types';
 import { usePaymentRequestStore } from '@/store/paymentRequestStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useRecipientStore } from '@/store/recipientStore';
+import { useTransactionStore } from '@/store/transactionStore';
 
 export function useRequestPayViewModel(recipientId: string) {
   const navigation = useNavigation<RecipientsStackNavigationProp>();
@@ -19,7 +20,7 @@ export function useRequestPayViewModel(recipientId: string) {
 
   const [amountText, setAmountText] = useState('');
   const [transferNameDraft, setTransferNameDraft] = useState('');
-  const [category, setCategory] = useState<TransactionCategory>('transfer');
+  const [category, setCategory] = useState<TransactionCategory>('unknown');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -40,14 +41,21 @@ export function useRequestPayViewModel(recipientId: string) {
     }
     setSaving(true);
     try {
-      await add({
+      const created = await add({
         recipientId: recipient.id,
         amount: parsedAmount,
         note: note.trim() || undefined,
         transferName: transferNameDraft.trim() || undefined,
         category,
       });
-      navigation.goBack();
+      const linked = useTransactionStore
+        .getState()
+        .findByPaymentRequestId(created.id);
+      navigation.replace('PaymentConfirm', {
+        kind: 'request',
+        paymentRequestId: created.id,
+        refId: linked?.refId,
+      });
     } finally {
       setSaving(false);
     }

@@ -12,6 +12,9 @@ export type BudgetDonutSlice = {
 
 export type BudgetCategoryDonutProps = {
   slices: BudgetDonutSlice[];
+  centerAmount?: string;
+  centerCaption?: string;
+  /** @deprecated Prefer centerAmount + centerCaption */
   centerLabel?: string;
 };
 
@@ -53,7 +56,12 @@ function describeDonutSlice(
   ].join(' ');
 }
 
-export function BudgetCategoryDonut({ slices, centerLabel }: BudgetCategoryDonutProps) {
+export function BudgetCategoryDonut({
+  slices,
+  centerAmount,
+  centerCaption,
+  centerLabel,
+}: BudgetCategoryDonutProps) {
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
 
@@ -72,6 +80,9 @@ export function BudgetCategoryDonut({ slices, centerLabel }: BudgetCategoryDonut
         };
       })
     : [];
+
+  const amountText = centerAmount ?? centerLabel;
+  const showCenter = Boolean(amountText || centerCaption);
 
   return (
     <View style={styles.wrapper} testID="budget-donut">
@@ -93,19 +104,34 @@ export function BudgetCategoryDonut({ slices, centerLabel }: BudgetCategoryDonut
           )}
         </G>
       </Svg>
-      {centerLabel ? (
+      {showCenter ? (
         <View pointerEvents="none" style={styles.centerLabel}>
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: typography.fontSize.sm,
-              fontWeight: typography.fontWeight.semibold,
-              paddingHorizontal: spacing.sm,
-              textAlign: 'center',
-            }}
-          >
-            {centerLabel}
-          </Text>
+          {amountText ? (
+            <Text
+              numberOfLines={2}
+              style={{
+                color: colors.textPrimary,
+                fontSize: typography.fontSize.sm,
+                fontWeight: typography.fontWeight.bold,
+                paddingHorizontal: spacing.sm,
+                textAlign: 'center',
+              }}
+            >
+              {amountText}
+            </Text>
+          ) : null}
+          {centerCaption ? (
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontSize: typography.fontSize.xs,
+                marginTop: 2,
+                textAlign: 'center',
+              }}
+            >
+              {centerCaption}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </View>

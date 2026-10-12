@@ -1,12 +1,18 @@
 export const TRANSACTION_CATEGORIES = [
   'salary',
-  'transfer',
+  'transportation',
   'food',
   'entertainment',
   'bills',
   'personal',
   'other',
+  'unknown',
 ] as const;
+
+/** Categories shown in pickers (excludes uncategorized sentinel). */
+export const SELECTABLE_TRANSACTION_CATEGORIES = TRANSACTION_CATEGORIES.filter(
+  (category) => category !== 'unknown',
+);
 
 export type TransactionCategory = (typeof TRANSACTION_CATEGORIES)[number];
 
@@ -14,7 +20,11 @@ export function isTransactionCategory(value: string): value is TransactionCatego
   return (TRANSACTION_CATEGORIES as readonly string[]).includes(value);
 }
 
-export type TransactionStatus = 'completed' | 'scheduled' | 'cancelled';
+export type TransactionStatus =
+  | 'completed'
+  | 'scheduled'
+  | 'cancelled'
+  | 'pending';
 
 export interface Transaction {
   refId: string;
@@ -26,6 +36,7 @@ export interface Transaction {
   status: TransactionStatus;
   scheduledFor?: string;
   recipientId?: string;
+  paymentRequestId?: string;
 }
 
 export type FlowType = 'incoming' | 'outgoing';
@@ -58,4 +69,5 @@ export interface NewTransactionInput {
   status?: TransactionStatus;
   scheduledFor?: string;
   recipientId?: string;
+  paymentRequestId?: string;
 }

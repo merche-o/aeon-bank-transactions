@@ -9,7 +9,7 @@ const txs: Transaction[] = [
     recipientName: 'John Doe',
     transferName: 'Older',
     amount: 100,
-    category: 'transfer',
+    category: 'transportation',
     status: 'completed',
     recipientId: 'R1',
   },
@@ -19,7 +19,7 @@ const txs: Transaction[] = [
     recipientName: 'john doe',
     transferName: 'Newer',
     amount: 200,
-    category: 'transfer',
+    category: 'transportation',
     status: 'completed',
   },
   {
