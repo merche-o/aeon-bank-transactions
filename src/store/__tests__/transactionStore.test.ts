@@ -16,6 +16,7 @@ const unsorted: Transaction[] = [
     transferName: 'Bonus Payment',
     amount: 1200,
     category: 'salary',
+    status: 'completed',
   },
   {
     refId: '123ABC',
@@ -24,6 +25,7 @@ const unsorted: Transaction[] = [
     transferName: 'Salary Payment',
     amount: 1500,
     category: 'salary',
+    status: 'completed',
   },
   {
     refId: '456DEF',
@@ -32,6 +34,7 @@ const unsorted: Transaction[] = [
     transferName: 'Invoice Payment',
     amount: 2300.75,
     category: 'bills',
+    status: 'completed',
   },
 ];
 
@@ -43,6 +46,7 @@ function createMockRepository(
     getTransactionByRefId: jest.fn().mockResolvedValue(null),
     addTransaction: jest.fn(),
     updateTransactionCategory: jest.fn().mockResolvedValue(undefined),
+    cancelScheduledTransaction: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -126,6 +130,7 @@ describe('transactionStore', () => {
         transferName: 'Huge bill',
         amount: -999_999,
         category: 'bills',
+    status: 'completed',
       }),
     ).rejects.toBeInstanceOf(InsufficientFundsError);
 
@@ -141,6 +146,7 @@ describe('transactionStore', () => {
       transferName: 'Coffee',
       amount: -10,
       category: 'food',
+    status: 'completed',
     };
     const repository = createMockRepository({
       addTransaction: jest.fn().mockResolvedValue(created),

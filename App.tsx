@@ -6,12 +6,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { RootNavigator } from '@/navigation/RootNavigator';
-import { MockTransactionRepository } from '@/repositories/MockTransactionRepository';
-import { usePreferencesStore } from '@/store/preferencesStore';
 import {
-  setTransactionRepository,
-  useTransactionStore,
-} from '@/store/transactionStore';
+  createMockRepositories,
+  createNativeRepositories,
+  wireRepositories,
+} from '@/repositories/createRepositories';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import { usePaymentRequestStore } from '@/store/paymentRequestStore';
+import { useRecipientStore } from '@/store/recipientStore';
+import { useTransactionStore } from '@/store/transactionStore';
 import { ThemeProvider, useTheme } from '@/theme';
 
 function NavigationRoot() {
@@ -53,21 +56,20 @@ function ThemedApp() {
 async function bootstrapTransactions(): Promise<void> {
   // Web: never import expo-sqlite (WASM breaks Metro export). Use mock data.
   if (Platform.OS === 'web') {
-    setTransactionRepository(new MockTransactionRepository(400));
-    await useTransactionStore.getState().fetch();
-    return;
+    wireRepositories(createMockRepositories(400));
+  } else {
+    try {
+      wireRepositories(await createNativeRepositories());
+    } catch {
+      wireRepositories(createMockRepositories(400));
+    }
   }
 
-  try {
-    const { SqliteTransactionRepository } = await import(
-      '@/repositories/SqliteTransactionRepository'
-    );
-    setTransactionRepository(new SqliteTransactionRepository());
-    await useTransactionStore.getState().fetch();
-  } catch {
-    setTransactionRepository(new MockTransactionRepository(400));
-    await useTransactionStore.getState().fetch();
-  }
+  await Promise.all([
+    useTransactionStore.getState().fetch(),
+    useRecipientStore.getState().fetch(),
+    usePaymentRequestStore.getState().fetch(),
+  ]);
 }
 
 export default function App() {
