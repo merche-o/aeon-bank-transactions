@@ -75,12 +75,16 @@ export function DateRangePickerSheet<T extends string>({
 
   const canApplyCustom = Boolean(customStart && customEnd);
 
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal
       animationType="slide"
       onRequestClose={onClose}
       transparent
-      visible={visible}
+      visible
     >
       <Pressable
         accessibilityRole="button"

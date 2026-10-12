@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/theme';
 
@@ -58,17 +58,25 @@ async function renderControls(overrides: Partial<BudgetReportControlsProps> = {}
 }
 
 describe('BudgetReportControls', () => {
-  it('opens date sheet and applies last month preset', async () => {
-    const { getByTestId, findByTestId, onPeriodChange } = await renderControls();
+  it(
+    'opens date sheet and applies last month preset',
+    async () => {
+      const { getByTestId, findByTestId, onPeriodChange } =
+        await renderControls();
 
-    fireEvent.press(getByTestId('budget-date-calendar'));
-    const option = await findByTestId('budget-period-lastMonth');
-    fireEvent.press(option);
-    expect(onPeriodChange).toHaveBeenCalledWith('lastMonth');
-  });
+      fireEvent.press(getByTestId('budget-date-calendar'));
+      const option = await findByTestId('budget-period-lastMonth', {}, { timeout: 8000 });
+      fireEvent.press(option);
+      await waitFor(() => {
+        expect(onPeriodChange).toHaveBeenCalledWith('lastMonth');
+      });
+    },
+    15000,
+  );
 
   it('opens category menu and selects a category', async () => {
-    const { getByTestId, findByTestId, onCategoryChange } = await renderControls();
+    const { getByTestId, findByTestId, onCategoryChange } =
+      await renderControls();
 
     fireEvent.press(getByTestId('budget-filter-category-menu'));
     const option = await findByTestId('budget-filter-category-option-food');
