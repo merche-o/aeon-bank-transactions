@@ -7,28 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '@/i18n';
 import type { Locale } from '@/i18n/types';
+import { FilterMenuButton } from '@/presentation/widgets/FilterMenuButton';
 import { usePreferencesStore, type ThemeMode } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
-
-const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system'];
-
-function nextThemeMode(current: ThemeMode): ThemeMode {
-  const index = THEME_CYCLE.indexOf(current);
-  const nextIndex = index === -1 ? 0 : (index + 1) % THEME_CYCLE.length;
-  return THEME_CYCLE[nextIndex] ?? 'system';
-}
-
-function themeLabelKey(
-  mode: ThemeMode,
-): 'theme.light' | 'theme.dark' | 'theme.system' {
-  if (mode === 'dark') {
-    return 'theme.dark';
-  }
-  if (mode === 'system') {
-    return 'theme.system';
-  }
-  return 'theme.light';
-}
 
 export function DrawerContent(props: DrawerContentComponentProps) {
   const { navigation } = props;
@@ -40,15 +21,6 @@ export function DrawerContent(props: DrawerContentComponentProps) {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const setLocale = usePreferencesStore((state) => state.setLocale);
   const setThemeMode = usePreferencesStore((state) => state.setThemeMode);
-
-  const cycleTheme = () => {
-    setThemeMode(nextThemeMode(themeMode));
-  };
-
-  const toggleLocale = () => {
-    const next: Locale = locale === 'en' ? 'bm' : 'en';
-    setLocale(next);
-  };
 
   const openProfile = () => {
     navigation.closeDrawer();
@@ -80,18 +52,59 @@ export function DrawerContent(props: DrawerContentComponentProps) {
         {t('drawer.settings', locale)}
       </Text>
 
-      <DrawerRow
-        label={t('drawer.theme', locale)}
-        onPress={cycleTheme}
-        testID="drawer-theme"
-        value={t(themeLabelKey(themeMode), locale)}
-      />
-      <DrawerRow
-        label={t('drawer.language', locale)}
-        onPress={toggleLocale}
-        testID="drawer-language"
-        value={t(locale === 'en' ? 'language.en' : 'language.bm', locale)}
-      />
+      <View
+        style={[
+          styles.menuBlock,
+          { gap: spacing.md, paddingHorizontal: spacing.lg },
+        ]}
+      >
+        <View style={styles.menuRow}>
+          <FilterMenuButton
+            label={t('drawer.theme', locale)}
+            onChange={(mode: ThemeMode) => setThemeMode(mode)}
+            options={[
+              {
+                value: 'light',
+                label: t('theme.light', locale),
+                testID: 'drawer-theme-light',
+              },
+              {
+                value: 'dark',
+                label: t('theme.dark', locale),
+                testID: 'drawer-theme-dark',
+              },
+              {
+                value: 'system',
+                label: t('theme.system', locale),
+                testID: 'drawer-theme-system',
+              },
+            ]}
+            testID="drawer-theme"
+            value={themeMode}
+          />
+        </View>
+        <View style={styles.menuRow}>
+          <FilterMenuButton
+            label={t('drawer.language', locale)}
+            onChange={(next: Locale) => setLocale(next)}
+            options={[
+              {
+                value: 'en',
+                label: t('language.en', locale),
+                testID: 'drawer-language-en',
+              },
+              {
+                value: 'bm',
+                label: t('language.bm', locale),
+                testID: 'drawer-language-bm',
+              },
+            ]}
+            testID="drawer-language"
+            value={locale}
+          />
+        </View>
+      </View>
+
       <DrawerRow
         label={t('drawer.profile', locale)}
         onPress={openProfile}
@@ -156,6 +169,14 @@ function DrawerRow({
 }
 
 const styles = StyleSheet.create({
+  menuBlock: {
+    marginBottom: 8,
+    width: '100%',
+  },
+  menuRow: {
+    flexDirection: 'row',
+    width: '100%',
+  },
   row: {
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
