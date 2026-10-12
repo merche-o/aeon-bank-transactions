@@ -180,6 +180,69 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
             value={transaction.category}
           />
         </View>
+
+        {vm.canSettlePending ? (
+          <View style={{ gap: spacing.sm, marginTop: spacing.xl }}>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontSize: typography.fontSize.sm,
+                marginBottom: spacing.xs,
+              }}
+              testID="detail-pending-exercise-note"
+            >
+              {vm.labels.exerciseNote}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void vm.markPaid()}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.88 : 1,
+                  paddingVertical: spacing.md,
+                },
+              ]}
+              testID="detail-mark-paid"
+            >
+              <Text
+                style={{
+                  color: colors.textInverse,
+                  fontSize: typography.fontSize.md,
+                  fontWeight: typography.fontWeight.semibold,
+                  textAlign: 'center',
+                }}
+              >
+                {vm.labels.markPaid}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void vm.cancelPending()}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                {
+                  borderColor: colors.borderSubtle,
+                  opacity: pressed ? 0.88 : 1,
+                  paddingVertical: spacing.md,
+                },
+              ]}
+              testID="detail-cancel-request"
+            >
+              <Text
+                style={{
+                  color: colors.textPrimary,
+                  fontSize: typography.fontSize.md,
+                  fontWeight: typography.fontWeight.semibold,
+                  textAlign: 'center',
+                }}
+              >
+                {vm.labels.cancelRequest}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -192,8 +255,15 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  primaryButton: {
+    borderRadius: 12,
+  },
   receipt: {
     borderRadius: 16,
+    borderWidth: 1,
+  },
+  secondaryButton: {
+    borderRadius: 12,
     borderWidth: 1,
   },
 });

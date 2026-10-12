@@ -3,6 +3,10 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { Transaction } from '@/models/Transaction';
 import * as ShareService from '@/services/ShareService';
 import {
+  resetPaymentRequestStore,
+  usePaymentRequestStore,
+} from '@/store/paymentRequestStore';
+import {
   resetTransactionRepository,
   resetTransactionStore,
   useTransactionStore,
@@ -27,6 +31,7 @@ describe('useTransactionDetailViewModel', () => {
     shareTransactionMock.mockResolvedValue(undefined);
     resetTransactionStore();
     resetTransactionRepository();
+    resetPaymentRequestStore();
     useTransactionStore.setState({ transactions: [transaction], loading: false, error: null });
   });
 
@@ -76,5 +81,39 @@ describe('useTransactionDetailViewModel', () => {
     });
 
     expect(shareTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it('exposes settle actions for pending payment-request transactions', async () => {
+    const pending: Transaction = {
+      ...transaction,
+      refId: 'PEND1',
+      amount: 80,
+      status: 'pending',
+      paymentRequestId: 'pr-1',
+      category: 'unknown',
+    };
+    useTransactionStore.setState({
+      transactions: [pending],
+      loading: false,
+      error: null,
+    });
+    const fulfill = jest.fn().mockResolvedValue({
+      id: 'pr-1',
+      status: 'paid',
+    });
+    usePaymentRequestStore.setState({ fulfill });
+
+    const { result } = await renderHook(() =>
+      useTransactionDetailViewModel('PEND1'),
+    );
+
+    expect(result.current.canSettlePending).toBe(true);
+    expect(result.current.statusLabel).toBeTruthy();
+
+    await act(async () => {
+      await result.current.markPaid();
+    });
+
+    expect(fulfill).toHaveBeenCalledWith('pr-1');
   });
 });
