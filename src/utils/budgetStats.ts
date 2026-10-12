@@ -1,6 +1,19 @@
 import type { Transaction, TransactionCategory } from '../models/Transaction';
 import { isExpenseCategory } from './categories';
 
+export type BudgetPeriodPreset =
+  | 'thisMonth'
+  | 'lastMonth'
+  | 'last3Months'
+  | 'last6Months'
+  | 'custom';
+
+export interface BudgetRange {
+  start: string;
+  end: string;
+  monthKeys: string[];
+}
+
 export interface MonthlySpend {
   monthKey: string; // YYYY-MM
   label: string;
@@ -11,23 +24,304 @@ export interface MonthlySpend {
 export interface CategorySpend {
   category: TransactionCategory;
   total: number;
+  percent: number;
 }
 
-function monthKey(iso: string): string {
-  const d = new Date(iso);
+export interface MonthTotals {
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface PeriodChange {
+  percent: number | null;
+  direction: 'up' | 'down' | 'flat' | 'na';
+}
+
+export interface RecipientSpend {
+  recipientName: string;
+  total: number;
+  percent: number;
+}
+
+export interface MonthSpendProjection {
+  dailyAverage: number;
+  projectedMonthEnd: number;
+  dayOfMonth: number;
+  daysInMonth: number;
+}
+
+export interface UpcomingScheduledSummary {
+  total: number;
+  count: number;
+}
+
+export interface BudgetTransactionFilter {
+  start: string;
+  end: string;
+  categories: ReadonlySet<TransactionCategory> | TransactionCategory[];
+}
+
+function isCompletedTransaction(tx: Transaction): boolean {
+  const status = tx.status ?? 'completed';
+  return status === 'completed';
+}
+
+function categorySetIncludes(
+  categories: ReadonlySet<TransactionCategory> | TransactionCategory[],
+  category: TransactionCategory,
+): boolean {
+  if (categories instanceof Set || (typeof categories === 'object' && 'has' in categories)) {
+    return (categories as ReadonlySet<TransactionCategory>).has(category);
+  }
+  return categories.includes(category);
+}
+
+function utcMonthStart(year: number, monthIndex0: number): Date {
+  return new Date(Date.UTC(year, monthIndex0, 1, 0, 0, 0, 0));
+}
+
+function utcMonthEnd(year: number, monthIndex0: number): Date {
+  return new Date(Date.UTC(year, monthIndex0 + 1, 0, 23, 59, 59, 999));
+}
+
+function isoStartOfMonth(year: number, monthIndex0: number): string {
+  return utcMonthStart(year, monthIndex0).toISOString();
+}
+
+function isoEndOfMonth(year: number, monthIndex0: number): string {
+  return utcMonthEnd(year, monthIndex0).toISOString();
+}
+
+function parseMonthKey(key: string): { year: number; monthIndex0: number } {
+  const [y, m] = key.split('-');
+  return { year: Number(y), monthIndex0: Number(m) - 1 };
+}
+
+function monthKeysInclusive(fromKey: string, toKey: string): string[] {
+  const from = parseMonthKey(fromKey);
+  const to = parseMonthKey(toKey);
+  const keys: string[] = [];
+  let y = from.year;
+  let m = from.monthIndex0;
+  const endY = to.year;
+  const endM = to.monthIndex0;
+
+  while (y < endY || (y === endY && m <= endM)) {
+    keys.push(`${y}-${String(m + 1).padStart(2, '0')}`);
+    m += 1;
+    if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+  }
+  return keys;
+}
+
+function monthKeyFromUtcDate(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
   return `${y}-${m}`;
 }
 
-export function aggregateMonthlySpend(
+export function toMonthKey(iso: string): string {
+  return monthKeyFromUtcDate(new Date(iso));
+}
+
+function monthLabelFromKey(key: string): string {
+  const { year, monthIndex0 } = parseMonthKey(key);
+  return new Date(Date.UTC(year, monthIndex0, 1)).toLocaleDateString('en-GB', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+function shiftUtcMonths(year: number, monthIndex0: number, delta: number): { year: number; monthIndex0: number } {
+  const d = new Date(Date.UTC(year, monthIndex0 + delta, 1));
+  return { year: d.getUTCFullYear(), monthIndex0: d.getUTCMonth() };
+}
+
+export function resolveBudgetRange(
+  preset: BudgetPeriodPreset,
+  customStart?: string,
+  customEnd?: string,
+  now: Date = new Date(),
+): BudgetRange {
+  const nowY = now.getUTCFullYear();
+  const nowM = now.getUTCMonth();
+
+  let startY = nowY;
+  let startM = nowM;
+  let endY = nowY;
+  let endM = nowM;
+
+  switch (preset) {
+    case 'thisMonth':
+      break;
+    case 'lastMonth': {
+      const shifted = shiftUtcMonths(nowY, nowM, -1);
+      startY = shifted.year;
+      startM = shifted.monthIndex0;
+      endY = shifted.year;
+      endM = shifted.monthIndex0;
+      break;
+    }
+    case 'last3Months': {
+      const shifted = shiftUtcMonths(nowY, nowM, -2);
+      startY = shifted.year;
+      startM = shifted.monthIndex0;
+      break;
+    }
+    case 'last6Months': {
+      const shifted = shiftUtcMonths(nowY, nowM, -5);
+      startY = shifted.year;
+      startM = shifted.monthIndex0;
+      break;
+    }
+    case 'custom': {
+      if (!customStart || !customEnd) {
+        throw new Error('custom preset requires customStart and customEnd');
+      }
+      const startDate = new Date(customStart);
+      const endDate = new Date(customEnd);
+      startY = startDate.getUTCFullYear();
+      startM = startDate.getUTCMonth();
+      endY = endDate.getUTCFullYear();
+      endM = endDate.getUTCMonth();
+      break;
+    }
+    default: {
+      const _exhaustive: never = preset;
+      throw new Error(`Unknown preset: ${String(_exhaustive)}`);
+    }
+  }
+
+  const firstKey = monthKeyFromUtcDate(utcMonthStart(startY, startM));
+  const lastKey = monthKeyFromUtcDate(utcMonthStart(endY, endM));
+  const monthKeys = monthKeysInclusive(firstKey, lastKey);
+
+  return {
+    start: isoStartOfMonth(startY, startM),
+    end: isoEndOfMonth(endY, endM),
+    monthKeys,
+  };
+}
+
+export function priorRangeOfEqualLength(range: BudgetRange): BudgetRange {
+  const n = range.monthKeys.length;
+  if (n === 0) {
+    return { start: range.start, end: range.end, monthKeys: [] };
+  }
+
+  const first = parseMonthKey(range.monthKeys[0]);
+  const priorEnd = shiftUtcMonths(first.year, first.monthIndex0, -1);
+  const priorStart = shiftUtcMonths(priorEnd.year, priorEnd.monthIndex0, -(n - 1));
+
+  const monthKeys = monthKeysInclusive(
+    monthKeyFromUtcDate(utcMonthStart(priorStart.year, priorStart.monthIndex0)),
+    monthKeyFromUtcDate(utcMonthStart(priorEnd.year, priorEnd.monthIndex0)),
+  );
+
+  return {
+    start: isoStartOfMonth(priorStart.year, priorStart.monthIndex0),
+    end: isoEndOfMonth(priorEnd.year, priorEnd.monthIndex0),
+    monthKeys,
+  };
+}
+
+function isDateInInclusiveRange(iso: string, start: string, end: string): boolean {
+  const t = new Date(iso).getTime();
+  return t >= new Date(start).getTime() && t <= new Date(end).getTime();
+}
+
+export function filterBudgetTransactions(
+  txs: Transaction[],
+  filter: BudgetTransactionFilter,
+): Transaction[] {
+  const { start, end, categories } = filter;
+  return txs.filter(
+    (tx) =>
+      isCompletedTransaction(tx) &&
+      isDateInInclusiveRange(tx.transferDate, start, end) &&
+      categorySetIncludes(categories, tx.category),
+  );
+}
+
+export function aggregateMonthTotals(txs: Transaction[]): MonthTotals {
+  let income = 0;
+  let expense = 0;
+  for (const tx of txs) {
+    if (tx.amount < 0) {
+      expense += Math.abs(tx.amount);
+    } else {
+      income += tx.amount;
+    }
+  }
+  return { income, expense, net: income - expense };
+}
+
+export function periodOverPeriodChange(
+  currentExpense: number,
+  priorExpense: number,
+): PeriodChange {
+  if (priorExpense === 0) {
+    return { percent: null, direction: 'na' };
+  }
+  const percent = ((currentExpense - priorExpense) / priorExpense) * 100;
+  if (currentExpense > priorExpense) {
+    return { percent, direction: 'up' };
+  }
+  if (currentExpense < priorExpense) {
+    return { percent, direction: 'down' };
+  }
+  return { percent: 0, direction: 'flat' };
+}
+
+function buildMonthlySpendRow(
+  key: string,
+  expenseTotal: number,
+  incomeTotal: number,
+): MonthlySpend {
+  return {
+    monthKey: key,
+    label: monthLabelFromKey(key),
+    expenseTotal,
+    incomeTotal,
+  };
+}
+
+function aggregateMonthlySpendFromKeys(
   transactions: Transaction[],
-  monthCount: number = 6,
+  monthKeys: string[],
 ): MonthlySpend[] {
   const map = new Map<string, { expenseTotal: number; incomeTotal: number }>();
 
   for (const tx of transactions) {
-    const key = monthKey(tx.transferDate);
+    const key = toMonthKey(tx.transferDate);
+    const entry = map.get(key) ?? { expenseTotal: 0, incomeTotal: 0 };
+    if (tx.amount < 0) {
+      entry.expenseTotal += Math.abs(tx.amount);
+    } else {
+      entry.incomeTotal += tx.amount;
+    }
+    map.set(key, entry);
+  }
+
+  return monthKeys.map((key) => {
+    const entry = map.get(key) ?? { expenseTotal: 0, incomeTotal: 0 };
+    return buildMonthlySpendRow(key, entry.expenseTotal, entry.incomeTotal);
+  });
+}
+
+function aggregateMonthlySpendLegacy(
+  transactions: Transaction[],
+  monthCount: number,
+): MonthlySpend[] {
+  const map = new Map<string, { expenseTotal: number; incomeTotal: number }>();
+
+  for (const tx of transactions) {
+    const key = toMonthKey(tx.transferDate);
     const entry = map.get(key) ?? { expenseTotal: 0, incomeTotal: 0 };
     if (tx.amount < 0) {
       entry.expenseTotal += Math.abs(tx.amount);
@@ -40,18 +334,26 @@ export function aggregateMonthlySpend(
   const keys = [...map.keys()].sort().slice(-monthCount);
   return keys.map((key) => {
     const entry = map.get(key)!;
-    const [y, m] = key.split('-');
-    const label = new Date(Date.UTC(Number(y), Number(m) - 1, 1)).toLocaleDateString(
-      'en-GB',
-      { month: 'short', year: 'numeric', timeZone: 'UTC' },
-    );
-    return {
-      monthKey: key,
-      label,
-      expenseTotal: entry.expenseTotal,
-      incomeTotal: entry.incomeTotal,
-    };
+    return buildMonthlySpendRow(key, entry.expenseTotal, entry.incomeTotal);
   });
+}
+
+export function aggregateMonthlySpend(
+  transactions: Transaction[],
+  monthKeys: string[],
+): MonthlySpend[];
+export function aggregateMonthlySpend(
+  transactions: Transaction[],
+  monthCount?: number,
+): MonthlySpend[];
+export function aggregateMonthlySpend(
+  transactions: Transaction[],
+  monthKeysOrCount: string[] | number = 6,
+): MonthlySpend[] {
+  if (Array.isArray(monthKeysOrCount)) {
+    return aggregateMonthlySpendFromKeys(transactions, monthKeysOrCount);
+  }
+  return aggregateMonthlySpendLegacy(transactions, monthKeysOrCount);
 }
 
 export function aggregateCategorySpend(
@@ -64,7 +366,7 @@ export function aggregateCategorySpend(
     if (tx.amount >= 0) {
       continue;
     }
-    if (monthKeyFilter && monthKey(tx.transferDate) !== monthKeyFilter) {
+    if (monthKeyFilter && toMonthKey(tx.transferDate) !== monthKeyFilter) {
       continue;
     }
     if (!isExpenseCategory(tx.category) && tx.category !== 'other' && tx.category !== 'transfer') {
@@ -73,7 +375,73 @@ export function aggregateCategorySpend(
     map.set(tx.category, (map.get(tx.category) ?? 0) + Math.abs(tx.amount));
   }
 
-  return [...map.entries()]
+  const rows = [...map.entries()]
     .map(([category, total]) => ({ category, total }))
     .sort((a, b) => b.total - a.total);
+
+  const expenseGrandTotal = rows.reduce((sum, r) => sum + r.total, 0);
+  return rows.map(({ category, total }) => ({
+    category,
+    total,
+    percent: expenseGrandTotal === 0 ? 0 : (total / expenseGrandTotal) * 100,
+  }));
+}
+
+export function aggregateTopRecipients(
+  txs: Transaction[],
+  limit = 5,
+): RecipientSpend[] {
+  const map = new Map<string, number>();
+
+  for (const tx of txs) {
+    if (tx.amount >= 0) {
+      continue;
+    }
+    map.set(tx.recipientName, (map.get(tx.recipientName) ?? 0) + Math.abs(tx.amount));
+  }
+
+  const allRows = [...map.entries()]
+    .map(([recipientName, total]) => ({ recipientName, total }))
+    .sort((a, b) => b.total - a.total);
+
+  const grandTotal = allRows.reduce((sum, r) => sum + r.total, 0);
+  return allRows.slice(0, limit).map(({ recipientName, total }) => ({
+    recipientName,
+    total,
+    percent: grandTotal === 0 ? 0 : (total / grandTotal) * 100,
+  }));
+}
+
+export function projectMonthSpend(spentToDate: number, now: Date = new Date()): MonthSpendProjection {
+  const year = now.getUTCFullYear();
+  const monthIndex0 = now.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(year, monthIndex0 + 1, 0)).getUTCDate();
+  const dayOfMonth = now.getUTCDate();
+  const dailyAverage = dayOfMonth > 0 ? spentToDate / dayOfMonth : 0;
+  const projectedMonthEnd = dailyAverage * daysInMonth;
+
+  return { dailyAverage, projectedMonthEnd, dayOfMonth, daysInMonth };
+}
+
+export function sumUpcomingScheduled(
+  txs: Transaction[],
+  start: string,
+  end: string,
+): UpcomingScheduledSummary {
+  let total = 0;
+  let count = 0;
+
+  for (const tx of txs) {
+    if (tx.status !== 'scheduled' || tx.amount >= 0) {
+      continue;
+    }
+    const when = tx.scheduledFor ?? tx.transferDate;
+    if (!isDateInInclusiveRange(when, start, end)) {
+      continue;
+    }
+    total += Math.abs(tx.amount);
+    count += 1;
+  }
+
+  return { total, count };
 }

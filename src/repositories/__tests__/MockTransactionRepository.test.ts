@@ -19,6 +19,7 @@ describe('MockTransactionRepository', () => {
       refId: '123ABC',
       transferName: 'Salary Payment',
       amount: 1500,
+      status: 'completed',
     });
   });
 

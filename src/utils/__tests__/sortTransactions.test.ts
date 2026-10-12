@@ -9,6 +9,7 @@ const sample: Transaction[] = [
     transferName: 'Bonus Payment',
     amount: 1200,
     category: 'salary',
+    status: 'completed',
   },
   {
     refId: 'B',
@@ -17,6 +18,7 @@ const sample: Transaction[] = [
     transferName: 'Salary Payment',
     amount: 1500,
     category: 'salary',
+    status: 'completed',
   },
 ];
 

@@ -3,10 +3,16 @@ import type {
   NewTransactionInput,
   Transaction,
   TransactionCategory,
+  TransactionStatus,
 } from '../models/Transaction';
 import { isTransactionCategory } from '../models/Transaction';
+import {
+  promoteDueScheduledTransactions,
+  transactionWasPromoted,
+} from '../utils/schedule';
 
 import type { TransactionRepository } from './TransactionRepository';
+import { transactionFromInput } from './transactionFromInput';
 
 type Row = {
   ref_id: string;
@@ -15,7 +21,17 @@ type Row = {
   transfer_name: string;
   amount: number;
   category: string;
+  status: string | null;
+  scheduled_for: string | null;
+  recipient_id: string | null;
 };
+
+function parseStatus(value: string | null): TransactionStatus {
+  if (value === 'scheduled' || value === 'cancelled' || value === 'completed') {
+    return value;
+  }
+  return 'completed';
+}
 
 function mapRow(row: Row): Transaction {
   const category = isTransactionCategory(row.category) ? row.category : 'other';
@@ -26,16 +42,40 @@ function mapRow(row: Row): Transaction {
     transferName: row.transfer_name,
     amount: row.amount,
     category,
+    status: parseStatus(row.status),
+    scheduledFor: row.scheduled_for ?? undefined,
+    recipientId: row.recipient_id ?? undefined,
   };
 }
 
+async function persistPromotion(tx: Transaction): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    `UPDATE transactions SET status = ?, transfer_date = ? WHERE ref_id = ?`,
+    [tx.status, tx.transferDate, tx.refId],
+  );
+}
+
 export class SqliteTransactionRepository implements TransactionRepository {
-  async getTransactions(): Promise<Transaction[]> {
+  private async loadAndPromote(): Promise<Transaction[]> {
     const db = await getDatabase();
     const rows = await db.getAllAsync<Row>(
       `SELECT * FROM transactions ORDER BY transfer_date DESC`,
     );
-    return rows.map(mapRow);
+    const mapped = rows.map(mapRow);
+    const promoted = promoteDueScheduledTransactions(mapped);
+    for (let i = 0; i < mapped.length; i += 1) {
+      const before = mapped[i];
+      const after = promoted[i];
+      if (before && after && transactionWasPromoted(before, after)) {
+        await persistPromotion(after);
+      }
+    }
+    return promoted;
+  }
+
+  async getTransactions(): Promise<Transaction[]> {
+    return this.loadAndPromote();
   }
 
   async getTransactionByRefId(refId: string): Promise<Transaction | null> {
@@ -44,17 +84,25 @@ export class SqliteTransactionRepository implements TransactionRepository {
       `SELECT * FROM transactions WHERE ref_id = ?`,
       [refId],
     );
-    return row ? mapRow(row) : null;
+    if (!row) {
+      return null;
+    }
+    const mapped = mapRow(row);
+    const [promoted] = promoteDueScheduledTransactions([mapped]);
+    if (promoted && transactionWasPromoted(mapped, promoted)) {
+      await persistPromotion(promoted);
+    }
+    return promoted ?? mapped;
   }
 
   async addTransaction(input: NewTransactionInput): Promise<Transaction> {
     const db = await getDatabase();
     const refId = `NEW${Date.now().toString(36).toUpperCase()}`;
-    const created: Transaction = { refId, ...input };
+    const created = transactionFromInput(refId, input);
     await db.runAsync(
       `INSERT INTO transactions
-        (ref_id, transfer_date, recipient_name, transfer_name, amount, category)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+        (ref_id, transfer_date, recipient_name, transfer_name, amount, category, status, scheduled_for, recipient_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         created.refId,
         created.transferDate,
@@ -62,6 +110,9 @@ export class SqliteTransactionRepository implements TransactionRepository {
         created.transferName,
         created.amount,
         created.category,
+        created.status,
+        created.scheduledFor ?? null,
+        created.recipientId ?? null,
       ],
     );
     return created;
@@ -74,6 +125,25 @@ export class SqliteTransactionRepository implements TransactionRepository {
     const db = await getDatabase();
     await db.runAsync(`UPDATE transactions SET category = ? WHERE ref_id = ?`, [
       category,
+      refId,
+    ]);
+  }
+
+  async cancelScheduledTransaction(refId: string): Promise<void> {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Row>(
+      `SELECT * FROM transactions WHERE ref_id = ?`,
+      [refId],
+    );
+    if (!row) {
+      throw new Error('TRANSACTION_NOT_FOUND');
+    }
+    const tx = mapRow(row);
+    if (tx.status !== 'scheduled') {
+      throw new Error('TRANSACTION_NOT_SCHEDULED');
+    }
+    await db.runAsync(`UPDATE transactions SET status = ? WHERE ref_id = ?`, [
+      'cancelled',
       refId,
     ]);
   }

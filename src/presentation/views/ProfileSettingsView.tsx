@@ -1,11 +1,18 @@
 import { useNavigation } from '@react-navigation/native';
 import { useLayoutEffect } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
 
 import { useProfileSettingsViewModel } from '../viewmodels/useProfileSettingsViewModel';
+import { DateOfBirthFields } from '../widgets/DateOfBirthFields';
 
 export function ProfileSettingsView() {
   const navigation = useNavigation();
@@ -31,10 +38,10 @@ export function ProfileSettingsView() {
             marginBottom: spacing.xs,
           }}
         >
-          {vm.labels.name}
+          {vm.labels.firstName}
         </Text>
         <TextInput
-          onChangeText={vm.setName}
+          onChangeText={vm.setFirstName}
           placeholderTextColor={colors.textMuted}
           style={[
             styles.input,
@@ -44,8 +51,8 @@ export function ProfileSettingsView() {
               fontSize: typography.fontSize.md,
             },
           ]}
-          testID="profile-name-input"
-          value={vm.name}
+          testID="profile-firstname-input"
+          value={vm.firstName}
         />
 
         <Text
@@ -56,11 +63,10 @@ export function ProfileSettingsView() {
             marginTop: spacing.lg,
           }}
         >
-          {vm.labels.age}
+          {vm.labels.lastName}
         </Text>
         <TextInput
-          keyboardType="number-pad"
-          onChangeText={vm.setAgeText}
+          onChangeText={vm.setLastName}
           placeholderTextColor={colors.textMuted}
           style={[
             styles.input,
@@ -70,8 +76,26 @@ export function ProfileSettingsView() {
               fontSize: typography.fontSize.md,
             },
           ]}
-          testID="profile-age-input"
-          value={vm.ageText}
+          testID="profile-lastname-input"
+          value={vm.lastName}
+        />
+
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: typography.fontSize.sm,
+            marginBottom: spacing.xs,
+            marginTop: spacing.lg,
+          }}
+        >
+          {vm.labels.dateOfBirth}
+        </Text>
+        <DateOfBirthFields
+          errorMessage={vm.dobError ?? undefined}
+          labels={vm.labels.dob}
+          locale={vm.locale}
+          onChange={vm.onDobPartsChange}
+          value={vm.dobParts}
         />
 
         <Pressable
@@ -111,6 +135,7 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: 10,
     borderWidth: 1,
+    minHeight: 44,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },

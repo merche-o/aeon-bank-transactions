@@ -4,23 +4,23 @@ Mobile engineer assessment project: an Expo/React Native banking MVP for browsin
 
 ## Features
 
-- **Navigation** — Bottom tabs for **Transactions** and **Budget**; drawer for app settings (language, theme, profile).
-- **Balance & profile** — Running balance from all transactions; greeting and profile summary on the transactions home header.
-- **Transaction list** — Latest-first sorting; tap a row to open detail by `refId`.
+- **Navigation** — Bottom tabs for **Transactions** | **Recipients** | **Budget**; profile avatar on the **left**; settings gear on the **right** opens the drawer from the right.
+- **Balance & profile** — Running balance and greeting; profile uses first name, last name, and DOB as **Day / Month / Year** fields with auto-advance.
+- **Recipients** — Saved payees; **Send** (amount-only, category `transfer`, send now or one-time schedule) and **Request** money; scheduled list (view/cancel); pending requests (fulfill/cancel).
+- **Transaction list** — Latest-first sorting with **sticky day headers**; tap a row to open detail by `refId`. A floating **action FAB** opens Transfer or Request (recipient picker).
 - **Detail screen** — Full transfer metadata with formatted currency, dates, and **category**.
-- **Add transaction** — Form to record incoming/outgoing transfers; persisted locally via **SQLite** (`expo-sqlite`) through the repository port.
+- **Pay / request (Transactions tab)** — Use the **+ FAB** for Transfer or Request; opens the recipient picker with the matching mode. Legacy manual **Add transaction** form remains on the stack for compatibility.
 - **Categories** — Salary, transfer, food, entertainment, bills, personal, and other; filter the list by category and edit category on detail where supported.
 - **Share** — Native share sheet via `ShareService`, with receipt text built from domain data and passed through `sanitizeSharePayload`.
 - **Search & filters**
   - Debounced search (~300ms) across reference ID, recipient, transfer name, category, and amount.
-  - Type chips: all / incoming / outgoing.
-  - Category filter: all categories or a single category.
-  - Date range: all / last 7 days / last 30 days / **custom start–end range**.
+  - Type and category **dropdown menus**.
+  - Calendar button opens a date-range sheet: all / last week / last month / **custom start–end**.
 - **Budget tab** — Monthly income vs expense trends and spending breakdown by category (from domain utils).
 - **Insufficient funds** — Live balance check when adding an outgoing transfer; clear error when the debit would exceed available balance.
 - **Locales** — English (`en`) and Bahasa Malaysia (`bm`) via the `t()` helper; language toggle in drawer settings.
 - **Theme** — Light, dark, and system appearance using design tokens; theme toggle in drawer settings.
-- **Pull-to-refresh** — Reload transactions via `refresh()` (`isRefreshing`), without toggling the initial full-screen loading state.
+- **Pull-to-refresh** — Reload via pull gesture (`isRefreshing`); no header refresh button.
 - **UI states** — Loading spinner, empty list, full-screen error with retry, and “no matching results” when filters exclude all rows.
 
 ## Setup & Run
@@ -102,7 +102,7 @@ detox build --configuration ios.sim.debug
 detox test --configuration ios.sim.debug
 ```
 
-Use stable `testID`s (e.g. `transaction-list`, `search-input`, `filter-type-*`, `filter-date-*`, `transaction-card-{refId}`, `share-button`, `theme-toggle`, `language-toggle`) for reliable E2E selectors.
+Use stable `testID`s (e.g. `transaction-list`, `search-input`, `profile-header-button`, `settings-button`, `filter-type-menu`, `filter-category-menu`, `filter-date-calendar`, `filter-date-preset-*`, `transaction-card-{refId}`, `share-button`, `tab-transactions`, `tab-budget`) for reliable E2E selectors.
 
 ### Continuous integration
 

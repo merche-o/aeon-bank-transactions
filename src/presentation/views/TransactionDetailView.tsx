@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useLayoutEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -23,8 +24,40 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
   const { colors, spacing, typography } = theme;
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: vm.labels.title });
-  }, [navigation, vm.labels.title]);
+    navigation.setOptions({
+      title: vm.labels.title,
+      headerRight:
+        vm.transaction == null
+          ? undefined
+          : () => (
+              <Pressable
+                accessibilityLabel={vm.labels.shareButton}
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => void vm.share()}
+                style={({ pressed }) => ({
+                  marginRight: 4,
+                  opacity: pressed ? 0.7 : 1,
+                  padding: 8,
+                })}
+                testID="share-button"
+              >
+                <Ionicons
+                  color={colors.primary}
+                  name="share-outline"
+                  size={22}
+                />
+              </Pressable>
+            ),
+    });
+  }, [
+    colors.primary,
+    navigation,
+    vm.labels.shareButton,
+    vm.labels.title,
+    vm.share,
+    vm.transaction,
+  ]);
 
   if (vm.transaction == null) {
     return (
@@ -140,32 +173,6 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
             value={transaction.category}
           />
         </View>
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => void vm.share()}
-          style={({ pressed }) => [
-            styles.shareButton,
-            {
-              backgroundColor: colors.primary,
-              marginTop: spacing.xl,
-              opacity: pressed ? 0.9 : 1,
-              paddingVertical: spacing.lg,
-            },
-          ]}
-          testID="share-button"
-        >
-          <Text
-            style={{
-              color: colors.textInverse,
-              fontSize: typography.fontSize.md,
-              fontWeight: typography.fontWeight.semibold,
-              textAlign: 'center',
-            }}
-          >
-            {vm.labels.shareButton}
-          </Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -181,8 +188,5 @@ const styles = StyleSheet.create({
   receipt: {
     borderRadius: 16,
     borderWidth: 1,
-  },
-  shareButton: {
-    borderRadius: 12,
   },
 });

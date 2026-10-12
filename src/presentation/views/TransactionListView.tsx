@@ -1,31 +1,59 @@
+import { useMemo } from 'react';
 import {
-  FlatList,
-  Platform,
   Pressable,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
 
 import { useTransactionListViewModel } from '../viewmodels/useTransactionListViewModel';
-import { CategoryFilterChips } from '../widgets/CategoryFilterChips';
-import { CustomDateRangeFields } from '../widgets/CustomDateRangeFields';
-import { DateFilterChips, TypeFilterChips } from '../widgets/FilterChips';
+import { ActionFab } from '../widgets/ActionFab';
 import { EmptyState } from '../widgets/EmptyState';
 import { ErrorState } from '../widgets/ErrorState';
+import { FilterToolbar } from '../widgets/FilterToolbar';
 import { LoadingState } from '../widgets/LoadingState';
+import { ProfileAvatar } from '../widgets/ProfileAvatar';
 import { SearchBar } from '../widgets/SearchBar';
 import { StateMessage } from '../widgets/StateMessage';
+import type { DaySection } from '@/utils/groupTransactionsByDay';
+
+import { DaySeparator } from '../widgets/DaySeparator';
 import { TransactionCard } from '../widgets/TransactionCard';
+
+const TAB_BAR_FAB_OFFSET = 72;
 
 export function TransactionListView() {
   const vm = useTransactionListViewModel();
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
+
+  const fabActions = useMemo(
+    () => [
+      {
+        key: 'transfer',
+        label: vm.labels.transfer,
+        onPress: () => vm.openPaymentStart('transfer'),
+        testID: 'action-fab-transfer',
+      },
+      {
+        key: 'request',
+        label: vm.labels.request,
+        onPress: () => vm.openPaymentStart('request'),
+        testID: 'action-fab-request',
+      },
+    ],
+    [
+      vm.labels.transfer,
+      vm.labels.request,
+      vm.openPaymentStart,
+    ],
+  );
 
   const listHeader = (
     <View>
@@ -39,46 +67,20 @@ export function TransactionListView() {
           },
         ]}
       >
+        <ProfileAvatar
+          accessibilityLabel={vm.greetingText}
+          initial={vm.avatarInitial}
+          onPress={vm.openProfile}
+        />
         <Pressable
+          accessibilityLabel={vm.labels.settings}
           accessibilityRole="button"
           onPress={vm.openDrawer}
           style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.8 : 1 }]}
-          testID="drawer-menu-button"
+          testID="settings-button"
         >
-          <Text style={{ color: colors.primary, fontSize: typography.fontSize.lg }}>☰</Text>
+          <Ionicons color={colors.primary} name="settings-outline" size={24} />
         </Pressable>
-        <View style={styles.headerActions}>
-          {Platform.OS === 'web' ? (
-            <Pressable
-              accessibilityRole="button"
-              disabled={vm.isRefreshing}
-              onPress={() => void vm.refresh()}
-              style={({ pressed }) => [
-                styles.textButton,
-                {
-                  borderColor: colors.borderSubtle,
-                  opacity: pressed || vm.isRefreshing ? 0.7 : 1,
-                },
-              ]}
-              testID="header-refresh-button"
-            >
-              <Text style={{ color: colors.primary, fontSize: typography.fontSize.sm }}>
-                {vm.labels.refresh}
-              </Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            onPress={vm.openProfile}
-            style={({ pressed }) => [
-              styles.textButton,
-              { borderColor: colors.borderSubtle, opacity: pressed ? 0.8 : 1 },
-            ]}
-            testID="profile-header-button"
-          >
-            <Text style={{ color: colors.textSecondary, fontSize: typography.fontSize.sm }}>👤</Text>
-          </Pressable>
-        </View>
       </View>
 
       <Text
@@ -116,47 +118,17 @@ export function TransactionListView() {
         {vm.balanceFormatted}
       </Text>
 
-      <View
-        style={[
-          styles.addRow,
-          { marginBottom: spacing.md, marginHorizontal: spacing.lg },
-        ]}
+      <Text
+        style={{
+          color: colors.textPrimary,
+          fontSize: typography.fontSize.xl,
+          fontWeight: typography.fontWeight.bold,
+          marginBottom: spacing.md,
+          marginHorizontal: spacing.lg,
+        }}
       >
-        <Text
-          style={{
-            color: colors.textPrimary,
-            flex: 1,
-            fontSize: typography.fontSize.xl,
-            fontWeight: typography.fontWeight.bold,
-          }}
-        >
-          {vm.labels.title}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={vm.openAddTransaction}
-          style={({ pressed }) => [
-            styles.addButton,
-            {
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.9 : 1,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.sm,
-            },
-          ]}
-          testID="add-transaction-button"
-        >
-          <Text
-            style={{
-              color: colors.textInverse,
-              fontSize: typography.fontSize.sm,
-              fontWeight: typography.fontWeight.semibold,
-            }}
-          >
-            {vm.labels.add}
-          </Text>
-        </Pressable>
-      </View>
+        {vm.labels.title}
+      </Text>
 
       <SearchBar
         accessibilityLabel={vm.labels.searchPlaceholder}
@@ -164,34 +136,57 @@ export function TransactionListView() {
         placeholder={vm.labels.searchPlaceholder}
         value={vm.query}
       />
-      <TypeFilterChips
-        onChange={vm.setTypeFilter}
-        options={[...vm.typeFilterOptions]}
-        value={vm.typeFilter}
-      />
-      <DateFilterChips
-        onChange={vm.setDateRange}
-        options={[...vm.dateFilterOptions]}
-        value={vm.dateRange}
-      />
-      {vm.dateRange === 'custom' ? (
-        <CustomDateRangeFields
-          customEnd={vm.customEnd}
-          customStart={vm.customStart}
-          locale={vm.locale}
-          onChangeEnd={vm.setCustomEnd}
-          onChangeStart={vm.setCustomStart}
-        />
-      ) : null}
-      <CategoryFilterChips
+      <FilterToolbar
+        categoryFilter={vm.categoryFilter}
+        customEnd={vm.customEnd}
+        customStart={vm.customStart}
+        dateRange={vm.dateRange}
+        labels={{
+          type: vm.labels.filterType,
+          category: vm.labels.filterCategory,
+          categoryAll: vm.labels.categoryAll,
+          dateTitle: vm.labels.dateTitle,
+          dateAll: vm.labels.dateAll,
+          lastWeek: vm.labels.lastWeek,
+          lastMonth: vm.labels.lastMonth,
+          dateCustom: vm.labels.dateCustom,
+          apply: vm.labels.apply,
+          dateSummaryAll: vm.labels.dateSummaryAll,
+          dateSummary7d: vm.labels.dateSummary7d,
+          dateSummary30d: vm.labels.dateSummary30d,
+          dateSummaryCustom: vm.labels.dateSummaryCustom,
+        }}
         locale={vm.locale}
-        onChange={vm.setCategoryFilter}
-        value={vm.categoryFilter}
+        onChangeCategory={vm.setCategoryFilter}
+        onChangeDateRange={vm.setDateRange}
+        onChangeEnd={vm.setCustomEnd}
+        onChangeStart={vm.setCustomStart}
+        onChangeType={vm.setTypeFilter}
+        typeFilter={vm.typeFilter}
+        typeOptions={[...vm.typeFilterOptions]}
       />
     </View>
   );
 
   const shellStyle = [styles.flex, { backgroundColor: colors.background }];
+
+  const refreshControl = (
+    <RefreshControl
+      colors={[colors.primary]}
+      onRefresh={() => void vm.refresh()}
+      refreshing={vm.isRefreshing}
+      tintColor={colors.primary}
+    />
+  );
+
+  const fab = (
+    <ActionFab
+      accessibilityLabelClose={vm.labels.fabClose}
+      accessibilityLabelOpen={vm.labels.fabOpen}
+      actions={fabActions}
+      bottomOffset={TAB_BAR_FAB_OFFSET}
+    />
+  );
 
   if (vm.loading && vm.isEmpty && !vm.showNoMatchingResults) {
     return (
@@ -202,6 +197,7 @@ export function TransactionListView() {
       >
         {listHeader}
         <LoadingState message={vm.labels.loading} />
+        {fab}
       </SafeAreaView>
     );
   }
@@ -219,6 +215,7 @@ export function TransactionListView() {
           retryLabel={vm.labels.retry}
           title={vm.labels.error}
         />
+        {fab}
       </SafeAreaView>
     );
   }
@@ -232,6 +229,7 @@ export function TransactionListView() {
       >
         {listHeader}
         <EmptyState title={vm.labels.empty} />
+        {fab}
       </SafeAreaView>
     );
   }
@@ -242,11 +240,10 @@ export function TransactionListView() {
       style={shellStyle}
       testID="transaction-list"
     >
-      <FlatList
+      <SectionList
         contentContainerStyle={
           vm.showNoMatchingResults ? styles.flexGrow : { paddingBottom: spacing.xxl }
         }
-        data={vm.showNoMatchingResults ? [] : vm.transactions}
         keyExtractor={(item) => item.refId}
         ListEmptyComponent={
           vm.showNoMatchingResults ? (
@@ -254,43 +251,28 @@ export function TransactionListView() {
           ) : null
         }
         ListHeaderComponent={listHeader}
-        refreshControl={
-          Platform.OS !== 'web' ? (
-            <RefreshControl
-              colors={[colors.primary]}
-              onRefresh={() => void vm.refresh()}
-              refreshing={vm.isRefreshing}
-              tintColor={colors.primary}
-            />
-          ) : undefined
-        }
+        refreshControl={refreshControl}
         renderItem={({ item }) => (
           <TransactionCard locale={vm.locale} onPress={vm.openDetail} transaction={item} />
         )}
+        renderSectionHeader={({ section }: { section: DaySection }) => (
+          <DaySeparator dayKey={section.key} title={section.title} />
+        )}
+        sections={vm.showNoMatchingResults ? [] : vm.sections}
+        stickySectionHeadersEnabled
         testID="transaction-list-flatlist"
       />
+      {fab}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  addButton: {
-    borderRadius: 10,
-  },
-  addRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
   flex: {
     flex: 1,
   },
   flexGrow: {
     flexGrow: 1,
-  },
-  headerActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
   },
   headerTop: {
     alignItems: 'center',
@@ -299,11 +281,5 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 4,
-  },
-  textButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
   },
 });

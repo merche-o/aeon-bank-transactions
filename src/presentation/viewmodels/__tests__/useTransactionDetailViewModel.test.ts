@@ -17,6 +17,7 @@ const transaction: Transaction = {
   transferName: 'Salary Payment',
   amount: 1500,
   category: 'salary',
+    status: 'completed',
 };
 
 describe('useTransactionDetailViewModel', () => {

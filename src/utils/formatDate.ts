@@ -67,3 +67,41 @@ export function formatDateTime(
     }),
   );
 }
+
+/** Calendar day as YYYY-MM-DD in the resolved device (or explicit) time zone. */
+export function formatDayKey(
+  isoDate: string,
+  options?: FormatDateOptions,
+): string {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString(
+    'en-CA',
+    buildFormatOptions(options, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }),
+  );
+}
+
+export interface FormatDaySectionLabelOptions extends FormatDateOptions {
+  includeYear: boolean;
+}
+
+export function formatDaySectionLabel(
+  isoDate: string,
+  options: FormatDaySectionLabelOptions,
+): string {
+  const date = new Date(isoDate);
+  const parts: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: 'short',
+  };
+  if (options.includeYear) {
+    parts.year = 'numeric';
+  }
+  return date.toLocaleDateString(
+    resolveLocale(options),
+    buildFormatOptions(options, parts),
+  );
+}

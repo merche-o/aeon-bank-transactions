@@ -9,6 +9,7 @@ const txs: Transaction[] = [
     transferName: 'In',
     amount: 1000,
     category: 'salary',
+    status: 'completed',
   },
   {
     refId: '2',
@@ -17,6 +18,7 @@ const txs: Transaction[] = [
     transferName: 'Out',
     amount: -250,
     category: 'bills',
+    status: 'completed',
   },
 ];
 
@@ -24,6 +26,32 @@ describe('sumBalance', () => {
   it('sums transaction amounts', () => {
     expect(sumBalance(txs)).toBe(750);
     expect(sumBalance([])).toBe(0);
+  });
+
+  it('excludes scheduled and cancelled from balance', () => {
+    const withScheduled: Transaction[] = [
+      ...txs,
+      {
+        refId: '3',
+        transferDate: '2024-10-03T00:00:00Z',
+        recipientName: 'C',
+        transferName: 'Future',
+        amount: -500,
+        category: 'transfer',
+        status: 'scheduled',
+        scheduledFor: '2099-01-01',
+      },
+      {
+        refId: '4',
+        transferDate: '2024-10-03T00:00:00Z',
+        recipientName: 'D',
+        transferName: 'Cancelled',
+        amount: -100,
+        category: 'bills',
+        status: 'cancelled',
+      },
+    ];
+    expect(sumBalance(withScheduled)).toBe(750);
   });
 });
 

@@ -14,6 +14,11 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTransactionStore } from '@/store/transactionStore';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { filterTransactions } from '@/utils/filterTransactions';
+import { groupTransactionsByDay } from '@/utils/groupTransactionsByDay';
+import { avatarInitialFromName } from '@/utils/profile';
+
+import type { PaymentStartMode } from './usePaymentStartViewModel';
+
 const DEFAULT_CRITERIA: FilterCriteria = {
   query: '',
   type: 'all',
@@ -31,7 +36,7 @@ function interpolate(template: string, params: Record<string, string>): string {
 export function useTransactionListViewModel() {
   const navigation = useNavigation<TransactionListNavigationProp>();
   const locale = usePreferencesStore((state) => state.locale);
-  const displayName = usePreferencesStore((state) => state.displayName);
+  const firstName = usePreferencesStore((state) => state.firstName);
 
   const storeTransactions = useTransactionStore((state) => state.transactions);
   const loading = useTransactionStore((state) => state.loading);
@@ -71,6 +76,11 @@ export function useTransactionListViewModel() {
     [storeTransactions, criteria],
   );
 
+  const sections = useMemo(
+    () => groupTransactionsByDay(filteredTransactions, { locale }),
+    [filteredTransactions, locale],
+  );
+
   const hasActiveFilters =
     debouncedQuery.trim().length > 0 ||
     typeFilter !== 'all' ||
@@ -94,9 +104,16 @@ export function useTransactionListViewModel() {
     [navigation],
   );
 
-  const openAddTransaction = useCallback(() => {
-    navigation.navigate('AddTransaction');
-  }, [navigation]);
+  const openPaymentStart = useCallback(
+    (mode?: PaymentStartMode) => {
+      if (mode) {
+        navigation.navigate('PaymentStart', { mode });
+      } else {
+        navigation.navigate('PaymentStart');
+      }
+    },
+    [navigation],
+  );
 
   const openProfile = useCallback(() => {
     navigation.navigate('Profile');
@@ -107,9 +124,13 @@ export function useTransactionListViewModel() {
   }, [navigation]);
 
   const greetingName =
-    displayName.trim().length > 0 ? displayName.trim() : t('customer.default', locale);
+    firstName.trim().length > 0 ? firstName.trim() : t('customer.default', locale);
 
   const greetingText = interpolate(t('list.hello', locale), { name: greetingName });
+  const avatarInitial = avatarInitialFromName(
+    firstName,
+    t('customer.default', locale).charAt(0).toUpperCase() || 'C',
+  );
 
   const typeFilterOptions = useMemo(
     () =>
@@ -124,25 +145,6 @@ export function useTransactionListViewModel() {
           value: 'outgoing' as const,
           label: t('filters.outgoing', locale),
           testID: 'filter-type-outgoing',
-        },
-      ] as const,
-    [locale],
-  );
-
-  const dateFilterOptions = useMemo(
-    () =>
-      [
-        { value: 'all' as const, label: t('filters.dateAll', locale), testID: 'filter-date-all' },
-        { value: '7d' as const, label: t('filters.date7d', locale), testID: 'filter-date-7d' },
-        {
-          value: '30d' as const,
-          label: t('filters.date30d', locale),
-          testID: 'filter-date-30d',
-        },
-        {
-          value: 'custom' as const,
-          label: t('filters.dateCustom', locale),
-          testID: 'filter-date-custom',
         },
       ] as const,
     [locale],
@@ -163,22 +165,23 @@ export function useTransactionListViewModel() {
     customEnd,
     setCustomEnd,
     transactions: filteredTransactions,
+    sections,
     loading,
     isRefreshing,
     balance,
     balanceFormatted: formatCurrency(balance),
     greetingText,
+    avatarInitial,
     error,
     refresh,
     openDetail,
-    openAddTransaction,
+    openPaymentStart,
     openProfile,
     openDrawer,
     showNoMatchingResults,
     showFullScreenError,
     isEmpty: !loading && error == null && storeTransactions.length === 0,
     typeFilterOptions,
-    dateFilterOptions,
     labels: {
       title: t('list.title', locale),
       searchPlaceholder: t('list.searchPlaceholder', locale),
@@ -188,8 +191,24 @@ export function useTransactionListViewModel() {
       error: t('error.loadFailed', locale),
       retry: t('retry.button', locale),
       balance: t('list.balance', locale),
-      refresh: t('list.refresh', locale),
-      add: t('list.add', locale),
+      settings: t('common.settings', locale),
+      transfer: t('pay.transfer', locale),
+      request: t('pay.request', locale),
+      fabOpen: t('fab.openActions', locale),
+      fabClose: t('fab.closeActions', locale),
+      filterType: t('filters.type', locale),
+      filterCategory: t('filters.category', locale),
+      categoryAll: t('filters.categoryAll', locale),
+      dateTitle: t('filters.datePickerTitle', locale),
+      dateAll: t('filters.dateAll', locale),
+      lastWeek: t('filters.lastWeek', locale),
+      lastMonth: t('filters.lastMonth', locale),
+      dateCustom: t('filters.dateCustom', locale),
+      apply: t('filters.apply', locale),
+      dateSummaryAll: t('filters.dateAll', locale),
+      dateSummary7d: t('filters.lastWeek', locale),
+      dateSummary30d: t('filters.lastMonth', locale),
+      dateSummaryCustom: t('filters.dateCustom', locale),
     },
   };
 }
