@@ -12,6 +12,7 @@ import type {
 import type { TransactionListNavigationProp } from '@/navigation/types';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTransactionStore } from '@/store/transactionStore';
+import { sumPendingIncoming } from '@/utils/balance';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { filterTransactions } from '@/utils/filterTransactions';
 import { groupTransactionsByDay } from '@/utils/groupTransactionsByDay';
@@ -42,6 +43,10 @@ export function useTransactionListViewModel() {
   const loading = useTransactionStore((state) => state.loading);
   const isRefreshing = useTransactionStore((state) => state.isRefreshing);
   const balance = useTransactionStore((state) => state.balance);
+  const pendingIncoming = useMemo(
+    () => sumPendingIncoming(storeTransactions),
+    [storeTransactions],
+  );
   const error = useTransactionStore((state) => state.error);
   const fetch = useTransactionStore((state) => state.fetch);
   const refresh = useTransactionStore((state) => state.refresh);
@@ -170,6 +175,8 @@ export function useTransactionListViewModel() {
     isRefreshing,
     balance,
     balanceFormatted: formatCurrency(balance),
+    pendingIncoming,
+    pendingIncomingFormatted: formatCurrency(pendingIncoming),
     greetingText,
     avatarInitial,
     error,
@@ -191,6 +198,7 @@ export function useTransactionListViewModel() {
       error: t('error.loadFailed', locale),
       retry: t('retry.button', locale),
       balance: t('list.balance', locale),
+      pendingIncoming: t('list.pendingIncoming', locale),
       settings: t('common.settings', locale),
       transfer: t('pay.transfer', locale),
       request: t('pay.request', locale),

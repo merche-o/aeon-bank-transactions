@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 
 import { usePaymentConfirmViewModel } from '../viewmodels/usePaymentConfirmViewModel';
+import { DetailRow } from '../widgets/DetailRow';
 
 export function PaymentConfirmView() {
   const navigation = useNavigation();
@@ -115,23 +116,35 @@ export function PaymentConfirmView() {
             <DetailRow
               label={vm.labels.amount}
               value={vm.amountFormatted}
+              variant="inline"
             />
             <DetailRow
               label={vm.labels.recipient}
               value={vm.recipientName}
+              variant="inline"
             />
             {vm.transferName ? (
               <DetailRow
                 label={vm.labels.transferName}
                 value={vm.transferName}
+                variant="inline"
               />
             ) : null}
             <DetailRow
               label={vm.labels.category}
               value={vm.categoryLabel}
+              variant="inline"
             />
-            <DetailRow label={vm.labels.date} value={vm.dateLabel} />
-            <DetailRow label={vm.labels.status} value={vm.statusLabel} />
+            <DetailRow
+              label={vm.labels.date}
+              value={vm.dateLabel}
+              variant="inline"
+            />
+            <DetailRow
+              label={vm.labels.status}
+              value={vm.statusLabel}
+              variant="inline"
+            />
           </View>
         ) : null}
       </View>
@@ -227,34 +240,6 @@ export function PaymentConfirmView() {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  const theme = useTheme();
-  const { colors, typography } = theme;
-  return (
-    <View style={styles.row}>
-      <Text
-        style={{
-          color: colors.textMuted,
-          fontSize: typography.fontSize.sm,
-        }}
-      >
-        {label}
-      </Text>
-      <Text
-        style={{
-          color: colors.textPrimary,
-          flex: 1,
-          fontSize: typography.fontSize.md,
-          fontWeight: typography.fontWeight.medium,
-          textAlign: 'right',
-        }}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   actions: {
     width: '100%',
@@ -282,11 +267,6 @@ const styles = StyleSheet.create({
   },
   root: {
     flex: 1,
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
   },
   secondaryButton: {
     borderRadius: 12,

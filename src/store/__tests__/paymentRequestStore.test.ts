@@ -94,7 +94,7 @@ describe('paymentRequestStore', () => {
     useRecipientStore.setState({ recipients: [recipient] });
   });
 
-  it('add creates a pending income transaction that increases balance', async () => {
+  it('add creates a pending income transaction that does not increase spendable balance', async () => {
     const createdRequest: PaymentRequest = {
       id: 'pr-1',
       recipientId: 'r1',
@@ -125,7 +125,7 @@ describe('paymentRequestStore', () => {
       status: 'pending',
       paymentRequestId: 'pr-1',
     });
-    expect(balance).toBe(150);
+    expect(balance).toBe(0);
   });
 
   it('fulfill promotes linked pending tx without inserting a second one', async () => {
@@ -192,7 +192,7 @@ describe('paymentRequestStore', () => {
     expect(useTransactionStore.getState().transactions[0]?.status).toBe('pending');
   });
 
-  it('cancel marks linked pending tx cancelled and drops balance', async () => {
+  it('cancel marks linked pending tx cancelled without changing spendable balance', async () => {
     const request: PaymentRequest = {
       id: 'pr-3',
       recipientId: 'r1',
@@ -213,7 +213,7 @@ describe('paymentRequestStore', () => {
       recipientId: 'r1',
       amount: 40,
     });
-    expect(useTransactionStore.getState().balance).toBe(40);
+    expect(useTransactionStore.getState().balance).toBe(0);
 
     await usePaymentRequestStore.getState().cancel('pr-3');
 

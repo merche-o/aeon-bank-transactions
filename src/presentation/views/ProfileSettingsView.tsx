@@ -1,11 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import { useLayoutEffect } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +15,7 @@ import { useTheme } from '@/theme';
 
 import { useProfileSettingsViewModel } from '../viewmodels/useProfileSettingsViewModel';
 import { DateOfBirthFields } from '../widgets/DateOfBirthFields';
+import { FormField } from '../widgets/FormField';
 
 export function ProfileSettingsView() {
   const navigation = useNavigation();
@@ -30,100 +33,93 @@ export function ProfileSettingsView() {
       style={[styles.flex, { backgroundColor: colors.background }]}
       testID="profile-settings-screen"
     >
-      <View style={{ padding: spacing.lg }}>
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: typography.fontSize.sm,
-            marginBottom: spacing.xs,
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: spacing.xxxl,
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.lg,
           }}
+          keyboardShouldPersistTaps="handled"
         >
-          {vm.labels.firstName}
-        </Text>
-        <TextInput
-          onChangeText={vm.setFirstName}
-          placeholderTextColor={colors.textMuted}
-          style={[
-            styles.input,
-            {
-              borderColor: colors.borderSubtle,
-              color: colors.textPrimary,
-              fontSize: typography.fontSize.md,
-            },
-          ]}
-          testID="profile-firstname-input"
-          value={vm.firstName}
-        />
+          <FormField label={vm.labels.firstName}>
+            <TextInput
+              onChangeText={vm.setFirstName}
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.borderSubtle,
+                  color: colors.textPrimary,
+                  fontSize: typography.fontSize.md,
+                },
+              ]}
+              testID="profile-firstname-input"
+              value={vm.firstName}
+            />
+          </FormField>
 
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: typography.fontSize.sm,
-            marginBottom: spacing.xs,
-            marginTop: spacing.lg,
-          }}
-        >
-          {vm.labels.lastName}
-        </Text>
-        <TextInput
-          onChangeText={vm.setLastName}
-          placeholderTextColor={colors.textMuted}
-          style={[
-            styles.input,
-            {
-              borderColor: colors.borderSubtle,
-              color: colors.textPrimary,
-              fontSize: typography.fontSize.md,
-            },
-          ]}
-          testID="profile-lastname-input"
-          value={vm.lastName}
-        />
+          <FormField label={vm.labels.lastName}>
+            <TextInput
+              onChangeText={vm.setLastName}
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.borderSubtle,
+                  color: colors.textPrimary,
+                  fontSize: typography.fontSize.md,
+                },
+              ]}
+              testID="profile-lastname-input"
+              value={vm.lastName}
+            />
+          </FormField>
 
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: typography.fontSize.sm,
-            marginBottom: spacing.xs,
-            marginTop: spacing.lg,
-          }}
-        >
-          {vm.labels.dateOfBirth}
-        </Text>
-        <DateOfBirthFields
-          errorMessage={vm.dobError ?? undefined}
-          labels={vm.labels.dob}
-          locale={vm.locale}
-          onChange={vm.onDobPartsChange}
-          value={vm.dobParts}
-        />
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={vm.save}
-          style={({ pressed }) => [
-            styles.saveButton,
-            {
-              backgroundColor: colors.primary,
-              marginTop: spacing.xl,
-              opacity: pressed ? 0.9 : 1,
-              paddingVertical: spacing.lg,
-            },
-          ]}
-          testID="profile-save-button"
-        >
-          <Text
-            style={{
-              color: colors.textInverse,
-              fontSize: typography.fontSize.md,
-              fontWeight: typography.fontWeight.semibold,
-              textAlign: 'center',
-            }}
+          <FormField
+            error={vm.dobError ?? undefined}
+            label={vm.labels.dateOfBirth}
           >
-            {vm.labels.save}
-          </Text>
-        </Pressable>
-      </View>
+            <DateOfBirthFields
+              errorMessage={undefined}
+              labels={vm.labels.dob}
+              locale={vm.locale}
+              onChange={vm.onDobPartsChange}
+              value={vm.dobParts}
+            />
+          </FormField>
+
+          <Pressable
+            accessibilityLabel={vm.labels.save}
+            accessibilityRole="button"
+            onPress={vm.save}
+            style={({ pressed }) => [
+              styles.saveButton,
+              {
+                backgroundColor: colors.primary,
+                marginTop: spacing.xl,
+                opacity: pressed ? 0.9 : 1,
+                paddingVertical: spacing.lg,
+              },
+            ]}
+            testID="profile-save-button"
+          >
+            <Text
+              style={{
+                color: colors.textInverse,
+                fontSize: typography.fontSize.md,
+                fontWeight: typography.fontWeight.semibold,
+                textAlign: 'center',
+              }}
+            >
+              {vm.labels.save}
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

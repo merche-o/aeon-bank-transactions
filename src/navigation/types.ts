@@ -12,7 +12,6 @@ export type PaymentConfirmParams = {
 export type TransactionsStackParamList = {
   TransactionList: undefined;
   TransactionDetail: { refId: string };
-  AddTransaction: undefined;
   PaymentStart: { mode?: 'transfer' | 'request' } | undefined;
   QuickPay: { recipientId: string };
   RequestPay: { recipientId: string };
@@ -56,9 +55,3 @@ export type TransactionListNavigationProp = CompositeNavigationProp<
     DrawerNavigationProp<DrawerParamList>
   >
 >;
-
-/** @deprecated Use TransactionsStackNavigationProp for stack-only screens */
-export type RootStackParamList = TransactionsStackParamList;
-
-/** @deprecated Use TransactionListNavigationProp */
-export type RootNavigationProp = TransactionsStackNavigationProp;

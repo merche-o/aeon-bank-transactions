@@ -51,7 +51,7 @@ Why both: Clean Architecture keeps ports/adapters and testable domain; MVVM maps
 - Mock: inject fake repository / ShareService at boundaries
 - Component: RNTL on widgets
 - E2E: Detox smoke (list → filter → detail → share)
-- Stable `testID`s: `transaction-list`, `transaction-card-{refId}`, `search-input`, `filter-type-*`, `filter-date-*`, `share-button`, `theme-toggle`, `language-toggle`
+- Stable `testID`s: `transaction-list`, `transaction-card-{refId}`, `search-input`, `filter-type-menu`, `filter-type-option-*`, `filter-category-menu`, `filter-date-calendar`, `filter-date-preset-*`, `share-button`, `drawer-theme`, `drawer-theme-*`, `drawer-language`, `drawer-language-*`, `privacy-overlay`, `tab-transactions`, `tab-recipients`, `tab-budget`
 
 ## Git-flow
 
@@ -62,16 +62,21 @@ Why both: Clean Architecture keeps ports/adapters and testable domain; MVVM maps
 
 ## Subagent orchestration
 
-Parent coordinates, integrates, commits. Spawn parallel Task subagents when write paths do not conflict:
+Parent coordinates, integrates, commits. Spawn parallel Task subagents when write paths do not conflict.
 
-1. Domain + utils + unit tests
-2. Store + security
-3. i18n + theme
-4. List UI / detail + share
-5. Tests + CI
-6. Parallel reviews: architecture, security, test gaps
+**Custom agents** (`.cursor/agents/`): `aeon-cleanup`, `aeon-banking`, `aeon-security`, `aeon-tests`, `aeon-detox`, `aeon-docs`, `aeon-verifier`.
 
-Each subagent brief must list: paths to touch, AGENTS.md constraints, and paths not to edit. Parent keeps API summaries only — do not re-read entire trees.
+**Submission polish streams** (see skill `aeon-submission-polish`):
+
+1. Cleanup + FormField extract → `aeon-cleanup`
+2. Banking RN harden → `aeon-banking`
+3. Security wire + tests → `aeon-security`
+4. Unit / mock / RNTL / VMs → `aeon-tests`
+5. Detox smoke → `aeon-detox`
+6. README / AGENTS / CODE_REVIEW → `aeon-docs`
+7. Parent verify → `aeon-verifier` (+ architecture / security / test-gap skills)
+
+Each Task brief must list: paths to touch, AGENTS.md constraints, and paths not to edit. Parent keeps API summaries only — do not re-read entire trees.
 
 ## Commands
 
@@ -85,4 +90,12 @@ npx expo lint
 
 ## Skills
 
-Project skills under `.cursor/skills/`: `aeon-architecture-review`, `aeon-test-author`, `aeon-security-pass`.
+Project skills under `.cursor/skills/`:
+
+| Skill | When |
+|-------|------|
+| `aeon-submission-polish` | Full polish / parallel subagent orchestration |
+| `aeon-banking-rn` | Money path / privacy overlay / banking RN practices |
+| `aeon-architecture-review` | Layering review before merge/submission |
+| `aeon-security-pass` | Read-only PII / share / secrets scan |
+| `aeon-test-author` | Author or gap-check unit / mock / RNTL / Detox |

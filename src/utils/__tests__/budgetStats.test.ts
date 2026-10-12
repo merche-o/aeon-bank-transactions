@@ -4,7 +4,6 @@ import {
   aggregateMonthTotals,
   aggregateMonthlySpend,
   aggregateTopCounterparties,
-  aggregateTopRecipients,
   collapseCategorySpendTail,
   filterBudgetTransactions,
   periodOverPeriodChange,
@@ -403,11 +402,6 @@ describe('aggregateTopCounterparties', () => {
     expect(rows[0]?.percent).toBeCloseTo(100);
   });
 
-  it('aggregateTopRecipients remains an outgoing alias', () => {
-    expect(aggregateTopRecipients(txs, 2)).toEqual(
-      aggregateTopCounterparties(txs, 2, 'out'),
-    );
-  });
 });
 
 describe('projectMonthSpend', () => {

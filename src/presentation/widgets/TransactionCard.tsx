@@ -4,6 +4,7 @@ import { t } from '@/i18n';
 import type { Locale } from '@/i18n/types';
 import type { Transaction } from '@/models/Transaction';
 import { useTheme } from '@/theme';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
 import { AmountText } from './AmountText';
@@ -19,9 +20,11 @@ export function TransactionCard({ transaction, onPress, locale }: TransactionCar
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
   const isPending = transaction.status === 'pending';
+  const accessibilityLabel = `${transaction.recipientName}, ${transaction.transferName}, ${formatCurrency(transaction.amount)}`;
 
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       onPress={() => onPress(transaction.refId)}
       style={({ pressed }) => [

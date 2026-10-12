@@ -15,20 +15,10 @@ export {
   type BudgetCategoryDonutProps,
 } from './BudgetCategoryDonut';
 export {
-  BudgetCategoryLegend,
-  type BudgetCategoryLegendRow,
-  type BudgetCategoryLegendProps,
-} from './BudgetCategoryLegend';
-export {
   BudgetCategoryBreakdown,
   type BudgetCategoryBreakdownRow,
   type BudgetCategoryBreakdownProps,
 } from './BudgetCategoryBreakdown';
-export {
-  BudgetTopRecipients,
-  type BudgetTopRecipientRow,
-  type BudgetTopRecipientsProps,
-} from './BudgetTopRecipients';
 export {
   BudgetTopFlows,
   type BudgetTopFlowRow,

@@ -482,14 +482,6 @@ export function aggregateTopCounterparties(
   }));
 }
 
-/** @deprecated Prefer aggregateTopCounterparties(txs, limit, 'out') */
-export function aggregateTopRecipients(
-  txs: Transaction[],
-  limit = 5,
-): RecipientSpend[] {
-  return aggregateTopCounterparties(txs, limit, 'out');
-}
-
 export function projectMonthSpend(spentToDate: number, now: Date = new Date()): MonthSpendProjection {
   const year = now.getUTCFullYear();
   const monthIndex0 = now.getUTCMonth();

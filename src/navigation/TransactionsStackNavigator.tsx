@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AddRecipientView } from '@/presentation/views/AddRecipientView';
-import { AddTransactionView } from '@/presentation/views/AddTransactionView';
 import { PaymentConfirmView } from '@/presentation/views/PaymentConfirmView';
 import { PaymentStartView } from '@/presentation/views/PaymentStartView';
 import { ProfileSettingsView } from '@/presentation/views/ProfileSettingsView';
@@ -41,11 +40,6 @@ export function TransactionsStackNavigator() {
         component={TransactionDetailScreen}
         name="TransactionDetail"
         options={{ title: '' }}
-      />
-      <Stack.Screen
-        component={AddTransactionView}
-        name="AddTransaction"
-        options={{ headerShown: true }}
       />
       <Stack.Screen
         component={PaymentStartView}

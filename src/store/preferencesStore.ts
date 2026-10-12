@@ -3,7 +3,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { Locale } from '@/i18n/types';
+import { SecureLogger } from '@/security/SecureLogger';
 import { splitDisplayName } from '@/utils/profile';
+
+/**
+ * Lang/theme and profile fields persist in AsyncStorage by assessment design.
+ * Profile fields (firstName, lastName, dateOfBirth) are PII — never log raw values.
+ * Tokens/secrets must use SecureStore later (via secureStorage), not AsyncStorage or EXPO_PUBLIC_*.
+ */
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -93,6 +100,11 @@ export const usePreferencesStore = create<PreferencesState>()(
           ...current,
           ...migrated,
         };
+      },
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          SecureLogger.error('preferencesStore rehydrate failed', error);
+        }
       },
     },
   ),

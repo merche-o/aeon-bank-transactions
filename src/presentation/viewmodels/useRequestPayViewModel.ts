@@ -8,6 +8,7 @@ import { usePaymentRequestStore } from '@/store/paymentRequestStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useRecipientStore } from '@/store/recipientStore';
 import { useTransactionStore } from '@/store/transactionStore';
+import { parseAmountInput } from '@/utils/parseAmountInput';
 
 export function useRequestPayViewModel(recipientId: string) {
   const navigation = useNavigation<RecipientsStackNavigationProp>();
@@ -23,14 +24,9 @@ export function useRequestPayViewModel(recipientId: string) {
   const [category, setCategory] = useState<TransactionCategory>('unknown');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const parsedAmount = useMemo(() => {
-    const value = parseFloat(amountText.replace(/,/g, ''));
-    if (!Number.isFinite(value) || value <= 0) {
-      return null;
-    }
-    return value;
-  }, [amountText]);
+  const parsedAmount = useMemo(() => parseAmountInput(amountText), [amountText]);
 
   const canCreate =
     parsedAmount != null && recipient != null && !saving;
@@ -40,6 +36,7 @@ export function useRequestPayViewModel(recipientId: string) {
       return;
     }
     setSaving(true);
+    setSubmitError(null);
     try {
       const created = await add({
         recipientId: recipient.id,
@@ -56,6 +53,8 @@ export function useRequestPayViewModel(recipientId: string) {
         paymentRequestId: created.id,
         refId: linked?.refId,
       });
+    } catch {
+      setSubmitError(t('error.generic', locale));
     } finally {
       setSaving(false);
     }
@@ -63,12 +62,17 @@ export function useRequestPayViewModel(recipientId: string) {
     add,
     canCreate,
     category,
+    locale,
     navigation,
     note,
     parsedAmount,
     recipient,
     transferNameDraft,
   ]);
+
+  const createLabel = saving
+    ? t('pay.saving', locale)
+    : t('pay.createRequest', locale);
 
   return {
     recipient,
@@ -81,11 +85,15 @@ export function useRequestPayViewModel(recipientId: string) {
     setCategory,
     note,
     setNote,
+    saving,
+    submitError,
     canCreate,
     createRequest,
+    createLabel,
     labels: {
       title: t('pay.requestTitle', locale),
       amount: t('pay.amount', locale),
+      amountPlaceholder: t('pay.amountPlaceholder', locale),
       transferName: t('add.transferName', locale),
       category: t('add.categoryLabel', locale),
       note: t('pay.requestNote', locale),

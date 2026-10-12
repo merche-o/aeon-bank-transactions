@@ -110,13 +110,26 @@ export function TransactionListView() {
           color: colors.navy,
           fontSize: typography.fontSize.xxl,
           fontWeight: typography.fontWeight.bold,
-          marginBottom: spacing.md,
+          marginBottom: vm.pendingIncoming > 0 ? spacing.xs : spacing.md,
           marginHorizontal: spacing.lg,
         }}
         testID="balance-amount"
       >
         {vm.balanceFormatted}
       </Text>
+      {vm.pendingIncoming > 0 ? (
+        <Text
+          style={{
+            color: colors.textMuted,
+            fontSize: typography.fontSize.sm,
+            marginBottom: spacing.md,
+            marginHorizontal: spacing.lg,
+          }}
+          testID="pending-incoming-amount"
+        >
+          {vm.labels.pendingIncoming}: {vm.pendingIncomingFormatted}
+        </Text>
+      ) : null}
 
       <Text
         style={{

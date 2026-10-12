@@ -6,6 +6,7 @@ import type { RecipientRepository } from './RecipientRepository';
 type Row = {
   id: string;
   display_name: string;
+  /** Unencrypted at rest in SQLite — consider SQLCipher for production. */
   account_hint: string | null;
   created_at: string;
 };

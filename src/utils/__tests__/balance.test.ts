@@ -1,5 +1,11 @@
 import type { Transaction } from '../../models/Transaction';
-import { canAfford, sumBalance } from '../balance';
+import {
+  canAfford,
+  sumAvailableBalance,
+  sumBalance,
+  sumPendingIncoming,
+  sumScheduledOutgoingReserved,
+} from '../balance';
 
 const txs: Transaction[] = [
   {
@@ -23,13 +29,13 @@ const txs: Transaction[] = [
 ];
 
 describe('sumBalance', () => {
-  it('sums transaction amounts', () => {
+  it('sums completed transaction amounts only', () => {
     expect(sumBalance(txs)).toBe(750);
     expect(sumBalance([])).toBe(0);
   });
 
-  it('excludes scheduled and cancelled from balance', () => {
-    const withScheduled: Transaction[] = [
+  it('excludes scheduled, cancelled, and pending from available ledger', () => {
+    const withExtras: Transaction[] = [
       ...txs,
       {
         refId: '3',
@@ -50,11 +56,23 @@ describe('sumBalance', () => {
         category: 'bills',
         status: 'cancelled',
       },
+      {
+        refId: '5',
+        transferDate: '2024-10-04T00:00:00Z',
+        recipientName: 'E',
+        transferName: 'Request',
+        amount: 200,
+        category: 'transportation',
+        status: 'pending',
+        paymentRequestId: 'pr-1',
+      },
     ];
-    expect(sumBalance(withScheduled)).toBe(750);
+    expect(sumBalance(withExtras)).toBe(750);
   });
+});
 
-  it('includes pending incoming toward balance', () => {
+describe('sumPendingIncoming', () => {
+  it('sums pending positive amounts only', () => {
     const withPending: Transaction[] = [
       ...txs,
       {
@@ -77,7 +95,72 @@ describe('sumBalance', () => {
         status: 'pending',
       },
     ];
-    expect(sumBalance(withPending)).toBe(950);
+    expect(sumPendingIncoming(withPending)).toBe(200);
+  });
+});
+
+describe('sumScheduledOutgoingReserved', () => {
+  it('reserves absolute scheduled outgoing amounts', () => {
+    const withScheduled: Transaction[] = [
+      ...txs,
+      {
+        refId: '3',
+        transferDate: '2024-10-03T00:00:00Z',
+        recipientName: 'C',
+        transferName: 'Future',
+        amount: -500,
+        category: 'transportation',
+        status: 'scheduled',
+        scheduledFor: '2099-01-01',
+      },
+      {
+        refId: '7',
+        transferDate: '2024-10-03T00:00:00Z',
+        recipientName: 'G',
+        transferName: 'Scheduled in',
+        amount: 100,
+        category: 'salary',
+        status: 'scheduled',
+        scheduledFor: '2099-02-01',
+      },
+    ];
+    expect(sumScheduledOutgoingReserved(withScheduled)).toBe(500);
+  });
+});
+
+describe('sumAvailableBalance', () => {
+  it('subtracts reserved scheduled outgoings from completed ledger', () => {
+    const withScheduled: Transaction[] = [
+      ...txs,
+      {
+        refId: '3',
+        transferDate: '2024-10-03T00:00:00Z',
+        recipientName: 'C',
+        transferName: 'Future',
+        amount: -200,
+        category: 'transportation',
+        status: 'scheduled',
+        scheduledFor: '2099-01-01',
+      },
+    ];
+    expect(sumAvailableBalance(withScheduled)).toBe(550);
+  });
+
+  it('does not treat pending income as spendable', () => {
+    const withPending: Transaction[] = [
+      ...txs,
+      {
+        refId: '5',
+        transferDate: '2024-10-04T00:00:00Z',
+        recipientName: 'E',
+        transferName: 'Request',
+        amount: 200,
+        category: 'transportation',
+        status: 'pending',
+        paymentRequestId: 'pr-1',
+      },
+    ];
+    expect(sumAvailableBalance(withPending)).toBe(750);
   });
 });
 
@@ -87,12 +170,12 @@ describe('canAfford', () => {
     expect(canAfford(-50, 0)).toBe(true);
   });
 
-  it('allows outgoing when balance covers the debit', () => {
+  it('allows outgoing when available balance covers the debit', () => {
     expect(canAfford(750, -750)).toBe(true);
     expect(canAfford(750, -749.99)).toBe(true);
   });
 
-  it('rejects outgoing when balance is insufficient', () => {
+  it('rejects outgoing when available balance is insufficient', () => {
     expect(canAfford(750, -750.01)).toBe(false);
     expect(canAfford(0, -1)).toBe(false);
   });

@@ -7,6 +7,15 @@ alwaysApply: true
 
 - Parent agent coordinates, integrates, and commits — does not own large feature trees alone
 - Spawn parallel Task subagents when write paths do not conflict
+- Prefer project custom agents under `.cursor/agents/`:
+  - `aeon-cleanup` — dead code + FormField/segment extract
+  - `aeon-banking` — balance, parseAmount, PrivacyOverlay, forms/a11y
+  - `aeon-security` — SecureLogger, redactPii, security tests
+  - `aeon-tests` — unit / mock / RNTL / ViewModels
+  - `aeon-detox` — e2e smoke only (`e2e/`)
+  - `aeon-docs` — README / AGENTS / CODE_REVIEW
+  - `aeon-verifier` — tsc/jest/lint + review skills after streams
+- For full polish, load skill `aeon-submission-polish` and launch streams in parallel
 - Each brief must include: paths to touch, AGENTS.md constraints, paths not to edit
 - After a subagent finishes, keep the summary (APIs, files, test results) — do not re-read entire trees
-- Before submission, run architecture / security / test-gap reviews in parallel
+- Before submission, run architecture / security / test-gap reviews in parallel (`aeon-architecture-review`, `aeon-security-pass`, `aeon-test-author`)

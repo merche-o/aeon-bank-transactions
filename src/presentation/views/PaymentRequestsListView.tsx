@@ -35,109 +35,135 @@ export function PaymentRequestsListView() {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={<EmptyState title={vm.labels.empty} />}
         ListHeaderComponent={
-          <Text
-            style={{
-              color: colors.textMuted,
-              fontSize: typography.fontSize.sm,
-              marginBottom: spacing.md,
-              marginHorizontal: spacing.lg,
-            }}
-            testID="payment-requests-exercise-note"
-          >
-            {vm.labels.exerciseNote}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.row,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.borderSubtle,
+          <View>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontSize: typography.fontSize.sm,
+                marginBottom: spacing.md,
                 marginHorizontal: spacing.lg,
-                marginBottom: spacing.sm,
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.md,
-              },
-            ]}
-            testID={`payment-request-row-${item.id}`}
-          >
-            <View style={styles.flex}>
+              }}
+              testID="payment-requests-exercise-note"
+            >
+              {vm.labels.exerciseNote}
+            </Text>
+            {vm.actionError ? (
               <Text
                 style={{
-                  color: colors.textPrimary,
-                  fontSize: typography.fontSize.md,
-                  fontWeight: typography.fontWeight.semibold,
+                  color: colors.error,
+                  fontSize: typography.fontSize.sm,
+                  marginBottom: spacing.md,
+                  marginHorizontal: spacing.lg,
                 }}
+                testID="payment-requests-error"
               >
-                {item.recipientName}
+                {vm.actionError}
               </Text>
-              {item.note ? (
-                <Text
-                  style={{
-                    color: colors.textMuted,
-                    fontSize: typography.fontSize.sm,
-                    marginTop: spacing.xxs,
-                  }}
-                >
-                  {item.note}
-                </Text>
-              ) : null}
-            </View>
-            <AmountText amount={item.amount} />
-            <View style={[styles.actions, { marginLeft: spacing.sm }]}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => vm.markPaid(item.id)}
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  {
-                    backgroundColor: colors.primary,
-                    opacity: pressed ? 0.9 : 1,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: spacing.xs,
-                  },
-                ]}
-                testID={`payment-request-paid-${item.id}`}
-              >
-                <Text
-                  style={{
-                    color: colors.textInverse,
-                    fontSize: typography.fontSize.xs,
-                    fontWeight: typography.fontWeight.medium,
-                  }}
-                >
-                  {vm.labels.markPaid}
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => vm.cancelRequest(item.id)}
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  {
-                    borderColor: colors.borderSubtle,
-                    borderWidth: 1,
-                    marginTop: spacing.xxs,
-                    opacity: pressed ? 0.85 : 1,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: spacing.xxs,
-                  },
-                ]}
-                testID={`payment-request-cancel-${item.id}`}
-              >
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: typography.fontSize.xs,
-                  }}
-                >
-                  {vm.labels.cancel}
-                </Text>
-              </Pressable>
-            </View>
+            ) : null}
           </View>
-        )}
+        }
+        renderItem={({ item }) => {
+          const busy = vm.settlingId != null;
+          const thisBusy = vm.settlingId === item.id;
+          return (
+            <View
+              style={[
+                styles.row,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderSubtle,
+                  marginHorizontal: spacing.lg,
+                  marginBottom: spacing.sm,
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: spacing.md,
+                  opacity: thisBusy ? 0.7 : 1,
+                },
+              ]}
+              testID={`payment-request-row-${item.id}`}
+            >
+              <View style={styles.flex}>
+                <Text
+                  style={{
+                    color: colors.textPrimary,
+                    fontSize: typography.fontSize.md,
+                    fontWeight: typography.fontWeight.semibold,
+                  }}
+                >
+                  {item.recipientName}
+                </Text>
+                {item.note ? (
+                  <Text
+                    style={{
+                      color: colors.textMuted,
+                      fontSize: typography.fontSize.sm,
+                      marginTop: spacing.xxs,
+                    }}
+                  >
+                    {item.note}
+                  </Text>
+                ) : null}
+              </View>
+              <AmountText amount={item.amount} />
+              <View style={[styles.actions, { marginLeft: spacing.sm }]}>
+                <Pressable
+                  accessibilityLabel={vm.labels.markPaid}
+                  accessibilityRole="button"
+                  disabled={busy}
+                  onPress={() => void vm.markPaid(item.id)}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    {
+                      backgroundColor: busy
+                        ? colors.borderSubtle
+                        : colors.primary,
+                      opacity: pressed && !busy ? 0.9 : 1,
+                      paddingHorizontal: spacing.sm,
+                      paddingVertical: spacing.xs,
+                    },
+                  ]}
+                  testID={`payment-request-paid-${item.id}`}
+                >
+                  <Text
+                    style={{
+                      color: busy ? colors.textMuted : colors.textInverse,
+                      fontSize: typography.fontSize.xs,
+                      fontWeight: typography.fontWeight.medium,
+                    }}
+                  >
+                    {vm.labels.markPaid}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel={vm.labels.cancel}
+                  accessibilityRole="button"
+                  disabled={busy}
+                  onPress={() => void vm.cancelRequest(item.id)}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    {
+                      borderColor: colors.borderSubtle,
+                      borderWidth: 1,
+                      marginTop: spacing.xxs,
+                      opacity: pressed && !busy ? 0.85 : busy ? 0.5 : 1,
+                      paddingHorizontal: spacing.sm,
+                      paddingVertical: spacing.xxs,
+                    },
+                  ]}
+                  testID={`payment-request-cancel-${item.id}`}
+                >
+                  <Text
+                    style={{
+                      color: colors.textSecondary,
+                      fontSize: typography.fontSize.xs,
+                    }}
+                  >
+                    {vm.labels.cancel}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        }}
         testID="payment-requests-list"
       />
     </SafeAreaView>

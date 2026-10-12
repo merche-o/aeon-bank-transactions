@@ -19,6 +19,7 @@ export function useTransactionDetailViewModel(refId: string) {
   const cancelRequest = usePaymentRequestStore((state) => state.cancel);
   const [fetched, setFetched] = useState<typeof storeTransaction>(undefined);
   const [settling, setSettling] = useState(false);
+  const [settleError, setSettleError] = useState<string | null>(null);
 
   useEffect(() => {
     if (storeTransaction) {
@@ -75,10 +76,10 @@ export function useTransactionDetailViewModel(refId: string) {
         ? t('status.scheduled', locale)
         : null;
 
-  const canSettlePending =
-    transaction?.status === 'pending' &&
-    Boolean(transaction.paymentRequestId) &&
-    !settling;
+  const showSettleActions =
+    transaction?.status === 'pending' && Boolean(transaction.paymentRequestId);
+
+  const canSettlePending = showSettleActions && !settling;
 
   const markPaid = useCallback(async () => {
     const paymentRequestId = transaction?.paymentRequestId;
@@ -90,12 +91,15 @@ export function useTransactionDetailViewModel(refId: string) {
       return;
     }
     setSettling(true);
+    setSettleError(null);
     try {
       await fulfill(paymentRequestId);
+    } catch {
+      setSettleError(t('error.generic', locale));
     } finally {
       setSettling(false);
     }
-  }, [fulfill, settling, transaction?.paymentRequestId, transaction?.status]);
+  }, [fulfill, locale, settling, transaction?.paymentRequestId, transaction?.status]);
 
   const cancelPending = useCallback(async () => {
     const paymentRequestId = transaction?.paymentRequestId;
@@ -107,13 +111,17 @@ export function useTransactionDetailViewModel(refId: string) {
       return;
     }
     setSettling(true);
+    setSettleError(null);
     try {
       await cancelRequest(paymentRequestId);
+    } catch {
+      setSettleError(t('error.generic', locale));
     } finally {
       setSettling(false);
     }
   }, [
     cancelRequest,
+    locale,
     settling,
     transaction?.paymentRequestId,
     transaction?.status,
@@ -126,7 +134,10 @@ export function useTransactionDetailViewModel(refId: string) {
     updateCategory,
     categoryLabel,
     statusLabel,
+    showSettleActions,
     canSettlePending,
+    settling,
+    settleError,
     markPaid,
     cancelPending,
     labels: {
