@@ -1,6 +1,6 @@
 import type { Transaction } from '@/models/Transaction';
 import { formatCurrency } from '@/utils/formatCurrency';
-import { formatDate } from '@/utils/formatDate';
+import { formatDateTime } from '@/utils/formatDate';
 
 const MAX_SHARE_LENGTH = 2000;
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
@@ -35,7 +35,7 @@ export function buildReceiptText(
 ): string {
   const lines = [
     `${labels.reference}: ${transaction.refId}`,
-    `${labels.date}: ${formatDate(transaction.transferDate)}`,
+    `${labels.date}: ${formatDateTime(transaction.transferDate)}`,
     `${labels.recipient}: ${transaction.recipientName}`,
     `${labels.transferName}: ${transaction.transferName}`,
     `${labels.amount}: ${formatCurrency(transaction.amount)}`,

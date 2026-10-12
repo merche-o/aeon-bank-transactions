@@ -36,6 +36,22 @@ From the Expo dev tools (or separate terminals):
 ```bash
 npm run ios      # expo start --ios
 npm run android  # expo start --android
+npm run web      # expo start --web (local dev in the browser)
+```
+
+### Web preview (Vercel)
+
+Static web export uses Expo SDK 57’s default output folder **`dist`**.
+
+```bash
+npm run build:web   # expo export --platform web → dist/
+```
+
+Deploy to [Vercel](https://vercel.com) (project settings are in `vercel.json`: `buildCommand`, `outputDirectory`, SPA rewrites):
+
+```bash
+npx vercel          # preview deployment (link repo merche-o/aeon-bank-transactions on first run)
+npx vercel --prod   # production deployment
 ```
 
 Optional quality checks (also used in CI):

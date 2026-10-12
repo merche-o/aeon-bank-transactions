@@ -25,7 +25,8 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-detox-config-plugin"
+      "expo-detox-config-plugin",
+      "expo-localization"
     ]
   }
 }

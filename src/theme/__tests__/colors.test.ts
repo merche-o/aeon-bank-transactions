@@ -8,10 +8,17 @@ describe('color tokens', () => {
     expect(lightKeys).toEqual(darkKeys);
   });
 
-  it('uses teal and navy as primary brand accents', () => {
-    expect(lightColors.primary).toBe('#0D9488');
-    expect(lightColors.navy).toBe('#1E3A5F');
-    expect(darkColors.primary).toBe('#2DD4BF');
-    expect(darkColors.navy).toBe('#1E3A5F');
+  it('uses AEON magenta and deep neutrals as brand accents', () => {
+    expect(lightColors.primary).toBe('#B0307A');
+    expect(lightColors.primarySubtle).toBe('#F9E4F0');
+    expect(lightColors.navy).toBe('#2D1F28');
+    expect(darkColors.primary).toBe('#D857A0');
+    expect(darkColors.primarySubtle).toBe('#3D2235');
+    expect(darkColors.navy).toBe('#F5EBF2');
+  });
+
+  it('uses light textInverse for primary magenta buttons', () => {
+    expect(lightColors.textInverse).toBe('#FFFFFF');
+    expect(darkColors.textInverse).toBe('#FFFFFF');
   });
 });
