@@ -41,6 +41,8 @@ npm run web      # expo start --web (local dev in the browser)
 
 ### Web preview (Vercel)
 
+Live production URL: **https://aeon-bank-transactions.vercel.app**
+
 Static web export uses Expo SDK 57’s default output folder **`dist`**.
 
 ```bash
