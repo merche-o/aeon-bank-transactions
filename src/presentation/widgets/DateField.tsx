@@ -20,11 +20,28 @@ export type DateFieldProps = {
   placeholder?: string;
 };
 
-function toDisplay(iso: string): string {
+/** Calendar YYYY-MM-DD from an ISO string (UTC date parts). */
+export function toDisplay(iso: string): string {
   if (!iso) {
     return '';
   }
-  return iso.slice(0, 10);
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso.slice(0, 10);
+  }
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Stable noon-UTC ISO for a calendar day so timezone never flips the day. */
+export function calendarDayToIso(year: number, monthIndex0: number, day: number): string {
+  return new Date(Date.UTC(year, monthIndex0, day, 12, 0, 0, 0)).toISOString();
+}
+
+export function dateToCalendarIso(date: Date): string {
+  return calendarDayToIso(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function toDate(iso: string, fallback: Date): Date {
@@ -32,7 +49,29 @@ function toDate(iso: string, fallback: Date): Date {
     return fallback;
   }
   const parsed = new Date(iso);
-  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback;
+  }
+  return new Date(
+    parsed.getUTCFullYear(),
+    parsed.getUTCMonth(),
+    parsed.getUTCDate(),
+    12,
+    0,
+    0,
+    0,
+  );
+}
+
+function parseWebDateValue(value: string): string {
+  if (!value) {
+    return '';
+  }
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) {
+    return '';
+  }
+  return calendarDayToIso(y, m - 1, d);
 }
 
 export function DateField({
@@ -63,11 +102,10 @@ export function DateField({
         </Text>
         {createElement('input', {
           'data-testid': testID,
-          max: maximumDate ? maximumDate.toISOString().slice(0, 10) : undefined,
-          min: minimumDate ? minimumDate.toISOString().slice(0, 10) : undefined,
+          max: maximumDate ? toDisplay(maximumDate.toISOString()) : undefined,
+          min: minimumDate ? toDisplay(minimumDate.toISOString()) : undefined,
           onChange: (event: { target: { value: string } }) => {
-            const value = event.target.value;
-            onChange(value ? `${value}T00:00:00.000Z` : '');
+            onChange(parseWebDateValue(event.target.value));
           },
           style: {
             backgroundColor: colors.surface,
@@ -126,9 +164,9 @@ export function DateField({
           minimumDate={minimumDate}
           mode="date"
           onChange={(_, date) => {
-            setOpen(Platform.OS === 'ios');
+            setOpen(false);
             if (date) {
-              onChange(date.toISOString());
+              onChange(dateToCalendarIso(date));
             }
           }}
           value={selected}

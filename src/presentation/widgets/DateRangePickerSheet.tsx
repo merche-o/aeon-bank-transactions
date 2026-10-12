@@ -64,6 +64,8 @@ export function DateRangePickerSheet<T extends string>({
     }
   }, [visible, value]);
 
+  const canApplyCustom = Boolean(customStart && customEnd);
+
   return (
     <Modal
       animationType="slide"
@@ -152,7 +154,12 @@ export function DateRangePickerSheet<T extends string>({
               />
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={{ disabled: !canApplyCustom }}
+                disabled={!canApplyCustom}
                 onPress={() => {
+                  if (!canApplyCustom) {
+                    return;
+                  }
                   onSelectPreset(customValue);
                   onClose();
                 }}
@@ -162,7 +169,7 @@ export function DateRangePickerSheet<T extends string>({
                     backgroundColor: colors.primary,
                     marginHorizontal: spacing.lg,
                     marginTop: spacing.sm,
-                    opacity: pressed ? 0.9 : 1,
+                    opacity: !canApplyCustom ? 0.45 : pressed ? 0.9 : 1,
                     paddingVertical: spacing.md,
                   },
                 ]}
