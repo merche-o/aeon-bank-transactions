@@ -30,7 +30,7 @@ export class MockPaymentRequestRepository implements PaymentRequestRepository {
       amount: input.amount,
       note: input.note,
       transferName: input.transferName,
-      category: input.category ?? 'transfer',
+      category: input.category ?? 'unknown',
       status: 'pending',
       createdAt: new Date().toISOString(),
     };

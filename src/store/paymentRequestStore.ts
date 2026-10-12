@@ -71,7 +71,7 @@ export const usePaymentRequestStore = create<PaymentRequestStoreState>((set) => 
       recipientName: recipient?.displayName ?? 'Unknown',
       transferName,
       amount: created.amount,
-      category: created.category ?? 'transfer',
+      category: created.category ?? 'unknown',
       status: 'pending',
       recipientId: created.recipientId,
       paymentRequestId: created.id,
@@ -122,7 +122,7 @@ export const usePaymentRequestStore = create<PaymentRequestStoreState>((set) => 
         recipientName: recipient?.displayName ?? 'Unknown',
         transferName,
         amount: updated.amount,
-        category: updated.category ?? 'transfer',
+        category: updated.category ?? 'unknown',
         recipientId: updated.recipientId,
         paymentRequestId: updated.id,
       });

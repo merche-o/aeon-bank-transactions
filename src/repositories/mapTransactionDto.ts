@@ -1,6 +1,9 @@
 import type { Transaction } from '../models/Transaction';
 import type { TransactionDto } from '../models/TransactionDto';
-import { defaultCategoryForAmount } from '../utils/categories';
+import {
+  defaultCategoryForAmount,
+  normalizeTransactionCategory,
+} from '../utils/categories';
 
 export function mapTransactionDto(dto: TransactionDto): Transaction {
   return {
@@ -9,7 +12,9 @@ export function mapTransactionDto(dto: TransactionDto): Transaction {
     recipientName: dto.recipientName,
     transferName: dto.transferName,
     amount: dto.amount,
-    category: dto.category ?? defaultCategoryForAmount(dto.amount),
+    category: dto.category
+      ? normalizeTransactionCategory(dto.category)
+      : defaultCategoryForAmount(dto.amount),
     status: 'completed',
     recipientId: dto.recipientId,
   };

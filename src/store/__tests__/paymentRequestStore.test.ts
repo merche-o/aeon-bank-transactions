@@ -101,7 +101,7 @@ describe('paymentRequestStore', () => {
       amount: 150,
       status: 'pending',
       createdAt: '2024-10-12T10:00:00Z',
-      category: 'transfer',
+      category: 'transportation',
       transferName: 'Lunch',
     };
     const paymentRepo = createPaymentRepo({
@@ -115,7 +115,7 @@ describe('paymentRequestStore', () => {
       recipientId: 'r1',
       amount: 150,
       transferName: 'Lunch',
-      category: 'transfer',
+      category: 'transportation',
     });
 
     const { transactions, balance } = useTransactionStore.getState();

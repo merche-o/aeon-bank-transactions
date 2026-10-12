@@ -7,7 +7,7 @@ const base: Transaction = {
   recipientName: 'Jane',
   transferName: 'Scheduled send',
   amount: -100,
-  category: 'transfer',
+  category: 'transportation',
   status: 'scheduled',
   scheduledFor: '2024-10-05',
 };

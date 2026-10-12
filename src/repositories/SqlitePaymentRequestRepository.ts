@@ -4,7 +4,7 @@ import type {
   PaymentRequest,
   PaymentRequestStatus,
 } from '@/models/PaymentRequest';
-import { isTransactionCategory } from '@/models/Transaction';
+import { normalizeTransactionCategory } from '@/utils/categories';
 
 import type { PaymentRequestRepository } from './PaymentRequestRepository';
 
@@ -27,8 +27,7 @@ function parseStatus(value: string): PaymentRequestStatus {
 }
 
 function mapRow(row: Row): PaymentRequest {
-  const rawCategory = row.category ?? 'transfer';
-  const category = isTransactionCategory(rawCategory) ? rawCategory : 'transfer';
+  const category = normalizeTransactionCategory(row.category ?? 'unknown');
   return {
     id: row.id,
     recipientId: row.recipient_id,
@@ -54,7 +53,7 @@ export class SqlitePaymentRequestRepository implements PaymentRequestRepository 
     const db = await getDatabase();
     const id = `PR${Date.now().toString(36).toUpperCase()}`;
     const createdAt = new Date().toISOString();
-    const category = input.category ?? 'transfer';
+    const category = input.category ?? 'unknown';
     await db.runAsync(
       `INSERT INTO payment_requests
         (id, recipient_id, amount, note, transfer_name, category, status, created_at)

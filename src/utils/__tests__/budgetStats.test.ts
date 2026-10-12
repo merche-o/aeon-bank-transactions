@@ -58,7 +58,7 @@ const txs: Transaction[] = [
     recipientName: 'Friend',
     transferName: 'Transfer out',
     amount: -50,
-    category: 'transfer',
+    category: 'transportation',
     status: 'completed',
   },
 ];
@@ -155,7 +155,7 @@ describe('filterBudgetTransactions', () => {
   const range = resolveBudgetRange('last3Months', undefined, undefined, new Date('2024-10-15T12:00:00Z'));
   const allCategories = new Set<TransactionCategory>([
     'salary',
-    'transfer',
+    'transportation',
     'food',
     'entertainment',
     'bills',
@@ -202,7 +202,7 @@ describe('filterBudgetTransactions', () => {
         recipientName: 'Requestee',
         transferName: 'Payment received',
         amount: 300,
-        category: 'transfer',
+        category: 'transportation',
         status: 'pending',
         paymentRequestId: 'pr-1',
       },
@@ -295,7 +295,7 @@ describe('aggregateMonthlySpend', () => {
 describe('aggregateCategorySpend', () => {
   it('totals outgoing spend by category with percent of expense total', () => {
     const rows = aggregateCategorySpend(txs);
-    expect(rows.map((r) => r.category)).toEqual(['bills', 'transfer', 'food', 'other']);
+    expect(rows.map((r) => r.category)).toEqual(['bills', 'transportation', 'food', 'other']);
     expect(rows[0]?.total).toBe(120);
     const expenseTotal = 240;
     expect(rows[0]?.percent).toBeCloseTo((120 / expenseTotal) * 100);
@@ -324,7 +324,7 @@ describe('aggregateCategorySpend', () => {
 
   it('filters by month key when provided', () => {
     const rows = aggregateCategorySpend(txs, '2024-10');
-    expect(rows.map((r) => r.category)).toEqual(['bills', 'transfer', 'other']);
+    expect(rows.map((r) => r.category)).toEqual(['bills', 'transportation', 'other']);
     expect(rows[0]?.total).toBe(120);
   });
 
@@ -375,7 +375,7 @@ describe('aggregateCategorySpend', () => {
       [
         { category: 'bills', total: 100 },
         { category: 'food', total: 90 },
-        { category: 'transfer', total: 80 },
+        { category: 'transportation', total: 80 },
         { category: 'entertainment', total: 70 },
         { category: 'personal', total: 60 },
         { category: 'other', total: 10 },

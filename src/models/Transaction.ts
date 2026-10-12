@@ -1,12 +1,18 @@
 export const TRANSACTION_CATEGORIES = [
   'salary',
-  'transfer',
+  'transportation',
   'food',
   'entertainment',
   'bills',
   'personal',
   'other',
+  'unknown',
 ] as const;
+
+/** Categories shown in pickers (excludes uncategorized sentinel). */
+export const SELECTABLE_TRANSACTION_CATEGORIES = TRANSACTION_CATEGORIES.filter(
+  (category) => category !== 'unknown',
+);
 
 export type TransactionCategory = (typeof TRANSACTION_CATEGORIES)[number];
 

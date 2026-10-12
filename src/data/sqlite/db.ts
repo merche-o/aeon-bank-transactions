@@ -77,8 +77,13 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
     db,
     'payment_requests',
     'category',
-    "TEXT DEFAULT 'transfer'",
+    "TEXT DEFAULT 'unknown'",
   );
+
+  await db.execAsync(`
+    UPDATE transactions SET category = 'transportation' WHERE category = 'transfer';
+    UPDATE payment_requests SET category = 'transportation' WHERE category = 'transfer';
+  `);
 
   const seeded = await db.getFirstAsync<{ value: string }>(
     `SELECT value FROM meta WHERE key = ?`,

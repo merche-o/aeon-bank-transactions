@@ -18,7 +18,7 @@ function tx(
     recipientName: 'Jane',
     transferName: 'Payment',
     amount: 100,
-    category: 'transfer',
+    category: 'transportation',
     status: 'completed',
     ...overrides,
   };

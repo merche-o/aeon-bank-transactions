@@ -5,11 +5,11 @@ import type {
   TransactionCategory,
   TransactionStatus,
 } from '../models/Transaction';
-import { isTransactionCategory } from '../models/Transaction';
 import {
   promoteDueScheduledTransactions,
   transactionWasPromoted,
 } from '../utils/schedule';
+import { normalizeTransactionCategory } from '../utils/categories';
 
 import type { TransactionRepository } from './TransactionRepository';
 import { transactionFromInput } from './transactionFromInput';
@@ -40,7 +40,7 @@ function parseStatus(value: string | null): TransactionStatus {
 }
 
 function mapRow(row: Row): Transaction {
-  const category = isTransactionCategory(row.category) ? row.category : 'other';
+  const category = normalizeTransactionCategory(row.category);
   return {
     refId: row.ref_id,
     transferDate: row.transfer_date,
