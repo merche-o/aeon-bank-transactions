@@ -62,6 +62,7 @@ export function usePaymentRequestsListViewModel() {
       empty: t('empty.transactions', locale),
       markPaid: t('pay.markPaid', locale),
       cancel: t('pay.cancelRequest', locale),
+      exerciseNote: t('pay.markPaidExerciseNote', locale),
     },
   };
 }

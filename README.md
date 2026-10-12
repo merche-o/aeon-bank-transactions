@@ -6,7 +6,7 @@ Mobile engineer assessment project: an Expo/React Native banking MVP for browsin
 
 - **Navigation** — Bottom tabs for **Transactions** | **Recipients** | **Budget**; profile avatar on the **left**; settings gear on the **right** opens the drawer from the right.
 - **Balance & profile** — Running balance and greeting; profile uses first name, last name, and DOB as **Day / Month / Year** fields with auto-advance.
-- **Recipients** — Saved payees; **Send** (amount-only, category `transfer`, send now or one-time schedule) and **Request** money; scheduled list (view/cancel); pending requests (fulfill/cancel).
+- **Recipients** — Saved payees; **Send** (amount-only, category `transfer`, send now or one-time schedule) and **Request** money (creates a **pending** income transaction immediately); scheduled list (view/cancel); pending requests with exercise-only **Mark as paid** / cancel (simulated settle — see below).
 - **Transaction list** — Latest-first sorting with **sticky day headers**; tap a row to open detail by `refId`. A floating **action FAB** opens Transfer or Request (recipient picker).
 - **Detail screen** — Full transfer metadata with formatted currency, dates, and **category**.
 - **Pay / request (Transactions tab)** — Use the **+ FAB** for Transfer or Request; opens the recipient picker with the matching mode. Legacy manual **Add transaction** form remains on the stack for compatibility.
@@ -16,7 +16,7 @@ Mobile engineer assessment project: an Expo/React Native banking MVP for browsin
   - Debounced search (~300ms) across reference ID, recipient, transfer name, category, and amount.
   - Type and category **dropdown menus**.
   - Calendar button opens a date-range sheet: all / last week / last month / **custom start–end**.
-- **Budget tab** — Monthly income vs expense trends and spending breakdown by category (from domain utils).
+- **Budget tab** — Available balance under the title, settings gear top-right; cash-flow hero, monthly income/expense chart, category donut, **top spending** / **top earning**, and month outlook.
 - **Insufficient funds** — Live balance check when adding an outgoing transfer; clear error when the debit would exceed available balance.
 - **Locales** — English (`en`) and Bahasa Malaysia (`bm`) via the `t()` helper; language toggle in drawer settings.
 - **Theme** — Light, dark, and system appearance using design tokens; theme toggle in drawer settings.
@@ -123,6 +123,24 @@ The same URL is also written to the Actions job summary. See [Releases](https://
 
 Detox can be added as a separate workflow step once prebuild artifacts and simulator runners are wired and flaky tests are addressed.
 
+## Simulated payments (important)
+
+Send, Request, Schedule, **Mark as paid**, and Budget totals are a **local simulation** on mock / SQLite data. **No actual payments, card charges, bank rails, or payment-processor integration** are implemented in this assessment app.
+
+- **Request money** creates a `pending` income transaction right away (counts toward balance and Budget income) and shows a Pending tag until settled or cancelled.
+- **Mark as paid** is **exercise-only** so reviewers can demo pending → completed. In a real banking product, inbound requests would settle **automatically** when the payer pays (webhook / bank notification), not via a manual button.
+
+### How to plug in real payment processing
+
+Architecture already isolates money movement behind ports (same idea as `ShareService` and `TransactionRepository`):
+
+1. Implement [`PaymentProcessingService`](src/services/PaymentProcessingService.ts) against your PSP or bank API (**server-side**; never put secrets in `EXPO_PUBLIC_*`).
+2. Map webhooks / settlement events to update `transactions` status and `payment_requests` status.
+3. Replace the default [`TmpPaymentProcessingService`](src/services/PaymentProcessingService.ts) at app bootstrap with `setPaymentProcessingService(...)` (same injection pattern as `wireRepositories` in [`createRepositories.ts`](src/repositories/createRepositories.ts)).
+4. Keep Views / ViewModels unchanged — only the service adapter (and optionally repository HTTP adapters) should change.
+
+The TMP adapter is temporary for this assessment: it succeeds immediately with no network I/O.
+
 ## Architecture
 
 This codebase combines **Clean Architecture** (ports and adapters, testable domain) with **MVVM** (natural fit for React Native: screens as Views, hooks as ViewModels).
@@ -194,7 +212,7 @@ src/
 │   └── widgets/          # Reusable UI (cards, filters, states)
 ├── repositories/         # Port + mock adapter + DTO mapping
 ├── security/             # SecureLogger, share sanitization, SecureStore wrapper
-├── services/             # Native-facing services (share)
+├── services/             # Native-facing services (share, TMP payment processing)
 ├── store/                # Zustand (transactions, preferences)
 ├── theme/                # Tokens, ThemeProvider, light/dark/system
 └── utils/                # Pure helpers (sort, filter, format)

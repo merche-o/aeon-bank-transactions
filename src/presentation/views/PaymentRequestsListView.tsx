@@ -34,6 +34,19 @@ export function PaymentRequestsListView() {
         data={vm.pendingRows}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={<EmptyState title={vm.labels.empty} />}
+        ListHeaderComponent={
+          <Text
+            style={{
+              color: colors.textMuted,
+              fontSize: typography.fontSize.sm,
+              marginBottom: spacing.md,
+              marginHorizontal: spacing.lg,
+            }}
+            testID="payment-requests-exercise-note"
+          >
+            {vm.labels.exerciseNote}
+          </Text>
+        }
         renderItem={({ item }) => (
           <View
             style={[
