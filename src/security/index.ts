@@ -9,3 +9,4 @@ export {
 } from './sanitizeSharePayload';
 export type { SharePayload } from './sanitizeSharePayload';
 export { redactPiiInString, redactPiiValue } from './redactPii';
+export { obfuscateAccountHint } from './obfuscateAccount';

@@ -7,6 +7,7 @@ export interface TransactionDto {
   transferName: string;
   amount: number;
   category?: TransactionCategory;
+  recipientId?: string;
 }
 
 export interface TransactionsResponse {

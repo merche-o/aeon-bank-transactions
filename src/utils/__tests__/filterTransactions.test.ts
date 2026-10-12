@@ -9,6 +9,7 @@ const txs: Transaction[] = [
     transferName: 'Salary Payment',
     amount: 1500,
     category: 'salary',
+    status: 'completed',
   },
   {
     refId: '789GHI',
@@ -17,6 +18,7 @@ const txs: Transaction[] = [
     transferName: 'Refund',
     amount: -500,
     category: 'bills',
+    status: 'completed',
   },
   {
     refId: '101JKL',
@@ -25,6 +27,7 @@ const txs: Transaction[] = [
     transferName: 'Bonus Payment',
     amount: 1200,
     category: 'salary',
+    status: 'completed',
   },
 ];
 

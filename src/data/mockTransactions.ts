@@ -9,6 +9,7 @@ export const mockTransactionsResponse: TransactionsResponse = {
       transferName: 'Salary Payment',
       amount: 1500.0,
       category: 'salary',
+      recipientId: 'R1',
     },
     {
       refId: '456DEF',
@@ -17,6 +18,7 @@ export const mockTransactionsResponse: TransactionsResponse = {
       transferName: 'Invoice Payment',
       amount: 2300.75,
       category: 'bills',
+      recipientId: 'R2',
     },
     {
       refId: '789GHI',
@@ -25,6 +27,7 @@ export const mockTransactionsResponse: TransactionsResponse = {
       transferName: 'Refund',
       amount: -500.0,
       category: 'other',
+      recipientId: 'R3',
     },
     {
       refId: '101JKL',
