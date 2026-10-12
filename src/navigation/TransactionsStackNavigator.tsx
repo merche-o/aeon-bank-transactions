@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AddRecipientView } from '@/presentation/views/AddRecipientView';
 import { AddTransactionView } from '@/presentation/views/AddTransactionView';
+import { PaymentConfirmView } from '@/presentation/views/PaymentConfirmView';
 import { PaymentStartView } from '@/presentation/views/PaymentStartView';
 import { ProfileSettingsView } from '@/presentation/views/ProfileSettingsView';
 import { QuickPayView } from '@/presentation/views/QuickPayView';
@@ -53,6 +54,11 @@ export function TransactionsStackNavigator() {
       />
       <Stack.Screen component={TransactionsQuickPayScreen} name="QuickPay" />
       <Stack.Screen component={TransactionsRequestPayScreen} name="RequestPay" />
+      <Stack.Screen
+        component={PaymentConfirmView}
+        name="PaymentConfirm"
+        options={{ gestureEnabled: false }}
+      />
       <Stack.Screen component={AddRecipientView} name="AddRecipient" />
       <Stack.Screen
         component={ProfileSettingsView}

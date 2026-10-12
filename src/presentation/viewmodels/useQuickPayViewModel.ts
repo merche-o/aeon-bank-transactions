@@ -93,8 +93,9 @@ export function useQuickPayViewModel(recipientId: string) {
     try {
       const nowIso = new Date().toISOString();
       const transferName = transferNameDraft.trim() || transferTitle;
+      let created;
       if (timing === 'now') {
-        await addTransaction({
+        created = await addTransaction({
           transferName,
           recipientName: recipient.displayName,
           amount: parsedAmount,
@@ -104,7 +105,7 @@ export function useQuickPayViewModel(recipientId: string) {
         });
       } else {
         const scheduledFor = scheduleDateIso.slice(0, 10);
-        await addTransaction({
+        created = await addTransaction({
           transferName,
           recipientName: recipient.displayName,
           amount: parsedAmount,
@@ -115,7 +116,10 @@ export function useQuickPayViewModel(recipientId: string) {
           recipientId: recipient.id,
         });
       }
-      navigation.goBack();
+      navigation.replace('PaymentConfirm', {
+        kind: timing === 'now' ? 'transfer' : 'schedule',
+        refId: created.refId,
+      });
     } catch (cause) {
       if (!(cause instanceof InsufficientFundsError)) {
         throw cause;
