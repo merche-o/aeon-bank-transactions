@@ -24,5 +24,10 @@ export {
   type BudgetTopRecipientRow,
   type BudgetTopRecipientsProps,
 } from './BudgetTopRecipients';
+export {
+  BudgetTopFlows,
+  type BudgetTopFlowRow,
+  type BudgetTopFlowsProps,
+} from './BudgetTopFlows';
 export { BudgetMonthOutlook, type BudgetMonthOutlookProps } from './BudgetMonthOutlook';
 export { BudgetEmptyState, type BudgetEmptyStateProps } from './BudgetEmptyState';

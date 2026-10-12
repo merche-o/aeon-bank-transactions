@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     minWidth: 64,
   },
   row: {
-    alignItems: 'stretch',
+    alignItems: 'center',
     flexDirection: 'row',
   },
 });
