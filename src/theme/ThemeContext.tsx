@@ -32,9 +32,11 @@ export function ThemeProvider({
   children,
 }: ThemeProviderProps) {
   const systemScheme = useColorScheme();
+  const resolvedSystemScheme: ResolvedColorScheme | null =
+    systemScheme === 'dark' || systemScheme === 'light' ? systemScheme : null;
 
   const theme = useMemo((): Theme => {
-    const colorScheme = resolveColorScheme(mode, systemScheme);
+    const colorScheme = resolveColorScheme(mode, resolvedSystemScheme);
     return {
       mode,
       colorScheme,
@@ -42,7 +44,7 @@ export function ThemeProvider({
       spacing,
       typography,
     };
-  }, [mode, systemScheme]);
+  }, [mode, resolvedSystemScheme]);
 
   return (
     <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>
