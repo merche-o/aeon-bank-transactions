@@ -1,6 +1,10 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { createElement, useState } from 'react';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+import { createElement, useCallback, useState } from 'react';
 import {
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -8,6 +12,8 @@ import {
   View,
 } from 'react-native';
 
+import { t } from '@/i18n';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
 export type DateFieldProps = {
@@ -36,7 +42,11 @@ export function toDisplay(iso: string): string {
 }
 
 /** Stable noon-UTC ISO for a calendar day so timezone never flips the day. */
-export function calendarDayToIso(year: number, monthIndex0: number, day: number): string {
+export function calendarDayToIso(
+  year: number,
+  monthIndex0: number,
+  day: number,
+): string {
   return new Date(Date.UTC(year, monthIndex0, day, 12, 0, 0, 0)).toISOString();
 }
 
@@ -44,7 +54,7 @@ export function dateToCalendarIso(date: Date): string {
   return calendarDayToIso(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function toDate(iso: string, fallback: Date): Date {
+export function toDate(iso: string, fallback: Date = new Date()): Date {
   if (!iso) {
     return fallback;
   }
@@ -84,9 +94,42 @@ export function DateField({
   placeholder = 'YYYY-MM-DD',
 }: DateFieldProps) {
   const theme = useTheme();
-  const { colors, spacing, typography } = theme;
-  const [open, setOpen] = useState(false);
-  const selected = toDate(valueIso, new Date());
+  const { colors, spacing, typography, colorScheme } = theme;
+  const locale = usePreferencesStore((state) => state.locale);
+  const [iosOpen, setIosOpen] = useState(false);
+  const [draft, setDraft] = useState(() => toDate(valueIso));
+
+  const selected = toDate(valueIso);
+
+  const openAndroidPicker = useCallback(() => {
+    DateTimePickerAndroid.open({
+      value: selected,
+      mode: 'date',
+      display: 'calendar',
+      minimumDate,
+      maximumDate,
+      onChange: (event: DateTimePickerEvent, date?: Date) => {
+        if (event.type !== 'set' || date == null) {
+          return;
+        }
+        onChange(dateToCalendarIso(date));
+      },
+    });
+  }, [maximumDate, minimumDate, onChange, selected]);
+
+  const openPicker = useCallback(() => {
+    if (Platform.OS === 'android') {
+      openAndroidPicker();
+      return;
+    }
+    setDraft(toDate(valueIso));
+    setIosOpen(true);
+  }, [openAndroidPicker, valueIso]);
+
+  const confirmIos = useCallback(() => {
+    onChange(dateToCalendarIso(draft));
+    setIosOpen(false);
+  }, [draft, onChange]);
 
   if (Platform.OS === 'web') {
     return (
@@ -102,8 +145,8 @@ export function DateField({
         </Text>
         {createElement('input', {
           'data-testid': testID,
-          max: maximumDate ? toDisplay(maximumDate.toISOString()) : undefined,
-          min: minimumDate ? toDisplay(minimumDate.toISOString()) : undefined,
+          max: maximumDate ? toDisplay(dateToCalendarIso(maximumDate)) : undefined,
+          min: minimumDate ? toDisplay(dateToCalendarIso(minimumDate)) : undefined,
           onChange: (event: { target: { value: string } }) => {
             onChange(parseWebDateValue(event.target.value));
           },
@@ -136,7 +179,7 @@ export function DateField({
       </Text>
       <Pressable
         accessibilityRole="button"
-        onPress={() => setOpen(true)}
+        onPress={openPicker}
         style={({ pressed }) => [
           styles.chip,
           {
@@ -158,19 +201,100 @@ export function DateField({
           {valueIso ? toDisplay(valueIso) : placeholder}
         </Text>
       </Pressable>
-      {open ? (
-        <DateTimePicker
-          maximumDate={maximumDate}
-          minimumDate={minimumDate}
-          mode="date"
-          onChange={(_, date) => {
-            setOpen(false);
-            if (date) {
-              onChange(dateToCalendarIso(date));
-            }
-          }}
-          value={selected}
-        />
+
+      {Platform.OS === 'ios' ? (
+        <Modal
+          animationType="slide"
+          onRequestClose={() => setIosOpen(false)}
+          transparent
+          visible={iosOpen}
+        >
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setIosOpen(false)}
+            style={[styles.iosBackdrop, { backgroundColor: colors.overlay }]}
+            testID={`${testID}-picker-backdrop`}
+          >
+            <Pressable
+              onPress={(event) => event.stopPropagation()}
+              style={[
+                styles.iosSheet,
+                {
+                  backgroundColor: colors.surfaceElevated,
+                  borderColor: colors.borderSubtle,
+                  paddingBottom: spacing.xl,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.iosToolbar,
+                  {
+                    borderBottomColor: colors.borderSubtle,
+                    paddingHorizontal: spacing.lg,
+                    paddingVertical: spacing.sm,
+                  },
+                ]}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() => setIosOpen(false)}
+                  testID={`${testID}-picker-cancel`}
+                >
+                  <Text
+                    style={{
+                      color: colors.textSecondary,
+                      fontSize: typography.fontSize.md,
+                    }}
+                  >
+                    {t('common.cancel', locale)}
+                  </Text>
+                </Pressable>
+                <Text
+                  style={{
+                    color: colors.textPrimary,
+                    fontSize: typography.fontSize.md,
+                    fontWeight: typography.fontWeight.semibold,
+                  }}
+                >
+                  {label}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={confirmIos}
+                  testID={`${testID}-picker-done`}
+                >
+                  <Text
+                    style={{
+                      color: colors.primary,
+                      fontSize: typography.fontSize.md,
+                      fontWeight: typography.fontWeight.semibold,
+                    }}
+                  >
+                    {t('common.done', locale)}
+                  </Text>
+                </Pressable>
+              </View>
+              <DateTimePicker
+                display="spinner"
+                maximumDate={maximumDate}
+                minimumDate={minimumDate}
+                mode="date"
+                onChange={(_, date) => {
+                  if (date) {
+                    setDraft(date);
+                  }
+                }}
+                style={styles.iosPicker}
+                testID={`${testID}-picker`}
+                themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
+                value={draft}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
       ) : null}
     </View>
   );
@@ -180,5 +304,25 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 10,
     borderWidth: 1,
+  },
+  iosBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  iosPicker: {
+    alignSelf: 'center',
+    height: 216,
+    width: '100%',
+  },
+  iosSheet: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderTopWidth: 1,
+  },
+  iosToolbar: {
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 });

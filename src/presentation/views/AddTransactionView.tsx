@@ -1,8 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLayoutEffect, type ReactNode } from 'react';
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +14,7 @@ import { useTheme } from '@/theme';
 
 import { useAddTransactionViewModel } from '../viewmodels/useAddTransactionViewModel';
 import { CategorySelectChips } from '../widgets/CategorySelectChips';
+import { DateField } from '../widgets/DateField';
 
 export function AddTransactionView() {
   const navigation = useNavigation();
@@ -78,33 +77,12 @@ export function AddTransactionView() {
           />
         </Field>
 
-        <Field label={vm.labels.date}>
-          {Platform.OS === 'web' ? (
-            <TextInput
-              onChangeText={(text) => {
-                if (text.trim()) {
-                  vm.setTransferDate(`${text}T12:00:00.000Z`);
-                }
-              }}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.textMuted}
-              style={inputStyle(colors, typography)}
-              testID="add-date"
-              value={vm.transferDate.slice(0, 10)}
-            />
-          ) : (
-            <DateTimePicker
-              mode="date"
-              onChange={(_, date) => {
-                if (date) {
-                  vm.setTransferDate(date.toISOString());
-                }
-              }}
-              testID="add-date"
-              value={new Date(vm.transferDate)}
-            />
-          )}
-        </Field>
+        <DateField
+          label={vm.labels.date}
+          onChange={vm.setTransferDate}
+          testID="add-date"
+          valueIso={vm.transferDate}
+        />
 
         <Text
           style={{

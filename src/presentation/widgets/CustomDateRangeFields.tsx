@@ -4,7 +4,7 @@ import { t } from '@/i18n';
 import type { Locale } from '@/i18n/types';
 import { useTheme } from '@/theme';
 
-import { DateField } from './DateField';
+import { DateField, toDate } from './DateField';
 
 export type CustomDateRangeFieldsProps = {
   locale: Locale;
@@ -24,23 +24,21 @@ export function CustomDateRangeFields({
   const theme = useTheme();
   const { spacing } = theme;
 
-  const startDate = customStart ? new Date(customStart) : undefined;
-  const endDate = customEnd ? new Date(customEnd) : undefined;
-  const startValid = startDate !== undefined && !Number.isNaN(startDate.getTime());
-  const endValid = endDate !== undefined && !Number.isNaN(endDate.getTime());
+  const startValid = Boolean(customStart) && !Number.isNaN(new Date(customStart).getTime());
+  const endValid = Boolean(customEnd) && !Number.isNaN(new Date(customEnd).getTime());
 
   return (
     <View style={{ gap: spacing.xs, paddingHorizontal: spacing.lg }}>
       <DateField
         label={t('filters.from', locale)}
-        maximumDate={endValid ? endDate : undefined}
+        maximumDate={endValid ? toDate(customEnd) : undefined}
         onChange={onChangeStart}
         testID="filter-date-custom-from"
         valueIso={customStart}
       />
       <DateField
         label={t('filters.to', locale)}
-        minimumDate={startValid ? startDate : undefined}
+        minimumDate={startValid ? toDate(customStart) : undefined}
         onChange={onChangeEnd}
         testID="filter-date-custom-to"
         valueIso={customEnd}

@@ -36,6 +36,8 @@ export const en: Dictionary = {
   'filters.datePickerTitle': 'Date range',
   'filters.apply': 'Apply',
   'common.settings': 'Settings',
+  'common.cancel': 'Cancel',
+  'common.done': 'Done',
   'loading.transactions': 'Loading transactions…',
   'empty.transactions': 'No transactions yet',
   'error.loadFailed': 'Could not load transactions',

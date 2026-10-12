@@ -36,6 +36,8 @@ export const bm: Dictionary = {
   'filters.datePickerTitle': 'Julat tarikh',
   'filters.apply': 'Gunakan',
   'common.settings': 'Tetapan',
+  'common.cancel': 'Batal',
+  'common.done': 'Selesai',
   'loading.transactions': 'Memuatkan transaksi…',
   'empty.transactions': 'Tiada transaksi lagi',
   'error.loadFailed': 'Tidak dapat memuatkan transaksi',

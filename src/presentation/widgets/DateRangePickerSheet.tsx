@@ -11,6 +11,15 @@ import type { Locale } from '@/i18n/types';
 import { useTheme } from '@/theme';
 
 import { CustomDateRangeFields } from './CustomDateRangeFields';
+import { calendarDayToIso, dateToCalendarIso } from './DateField';
+
+function defaultCustomRange(): { start: string; end: string } {
+  const now = new Date();
+  return {
+    start: calendarDayToIso(now.getFullYear(), now.getMonth(), 1),
+    end: dateToCalendarIso(now),
+  };
+}
 
 export type DateRangePresetOption<T extends string> = {
   value: T;
@@ -114,6 +123,16 @@ export function DateRangePickerSheet<T extends string>({
                   if (preset.value !== customValue) {
                     onSelectPreset(preset.value);
                     onClose();
+                    return;
+                  }
+                  if (!customStart || !customEnd) {
+                    const defaults = defaultCustomRange();
+                    if (!customStart) {
+                      onChangeStart(defaults.start);
+                    }
+                    if (!customEnd) {
+                      onChangeEnd(defaults.end);
+                    }
                   }
                 }}
                 style={({ pressed }) => [

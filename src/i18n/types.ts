@@ -36,6 +36,8 @@ export type TranslationKey =
   | 'filters.datePickerTitle'
   | 'filters.apply'
   | 'common.settings'
+  | 'common.cancel'
+  | 'common.done'
   | 'loading.transactions'
   | 'empty.transactions'
   | 'error.loadFailed'
