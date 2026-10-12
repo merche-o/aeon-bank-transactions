@@ -1,5 +1,4 @@
 import type { Transaction, TransactionCategory } from '../models/Transaction';
-import { isExpenseCategory } from './categories';
 
 export type BudgetPeriodPreset =
   | 'thisMonth'
@@ -64,7 +63,11 @@ export interface BudgetTransactionFilter {
 
 function isCompletedTransaction(tx: Transaction): boolean {
   const status = tx.status ?? 'completed';
-  return status === 'completed';
+  if (status === 'completed') {
+    return true;
+  }
+  // Pending incoming (request money) counts toward budget income.
+  return status === 'pending' && tx.amount >= 0;
 }
 
 function categorySetIncludes(
@@ -369,9 +372,6 @@ export function aggregateCategorySpend(
     if (monthKeyFilter && toMonthKey(tx.transferDate) !== monthKeyFilter) {
       continue;
     }
-    if (!isExpenseCategory(tx.category) && tx.category !== 'other' && tx.category !== 'transfer') {
-      continue;
-    }
     map.set(tx.category, (map.get(tx.category) ?? 0) + Math.abs(tx.amount));
   }
 
@@ -387,17 +387,27 @@ export function aggregateCategorySpend(
   }));
 }
 
-export function aggregateTopRecipients(
+export type CounterpartyDirection = 'out' | 'in';
+
+export function aggregateTopCounterparties(
   txs: Transaction[],
   limit = 5,
+  direction: CounterpartyDirection = 'out',
 ): RecipientSpend[] {
   const map = new Map<string, number>();
 
   for (const tx of txs) {
-    if (tx.amount >= 0) {
-      continue;
+    if (direction === 'out') {
+      if (tx.amount >= 0) {
+        continue;
+      }
+      map.set(tx.recipientName, (map.get(tx.recipientName) ?? 0) + Math.abs(tx.amount));
+    } else {
+      if (tx.amount <= 0) {
+        continue;
+      }
+      map.set(tx.recipientName, (map.get(tx.recipientName) ?? 0) + tx.amount);
     }
-    map.set(tx.recipientName, (map.get(tx.recipientName) ?? 0) + Math.abs(tx.amount));
   }
 
   const allRows = [...map.entries()]
@@ -410,6 +420,14 @@ export function aggregateTopRecipients(
     total,
     percent: grandTotal === 0 ? 0 : (total / grandTotal) * 100,
   }));
+}
+
+/** @deprecated Prefer aggregateTopCounterparties(txs, limit, 'out') */
+export function aggregateTopRecipients(
+  txs: Transaction[],
+  limit = 5,
+): RecipientSpend[] {
+  return aggregateTopCounterparties(txs, limit, 'out');
 }
 
 export function projectMonthSpend(spentToDate: number, now: Date = new Date()): MonthSpendProjection {

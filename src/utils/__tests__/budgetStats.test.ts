@@ -3,6 +3,7 @@ import {
   aggregateCategorySpend,
   aggregateMonthTotals,
   aggregateMonthlySpend,
+  aggregateTopCounterparties,
   aggregateTopRecipients,
   filterBudgetTransactions,
   periodOverPeriodChange,
@@ -163,6 +164,30 @@ describe('filterBudgetTransactions', () => {
     expect(filtered.some((t) => t.refId === 'legacy')).toBe(true);
   });
 
+  it('includes pending incoming toward income aggregates', () => {
+    const withPending: Transaction[] = [
+      ...txs,
+      {
+        refId: 'pend',
+        transferDate: '2024-10-12T12:00:00Z',
+        recipientName: 'Requestee',
+        transferName: 'Payment received',
+        amount: 300,
+        category: 'transfer',
+        status: 'pending',
+        paymentRequestId: 'pr-1',
+      },
+    ];
+    const filtered = filterBudgetTransactions(withPending, {
+      start: range.start,
+      end: range.end,
+      categories: allCategories,
+    });
+    expect(filtered.some((t) => t.refId === 'pend')).toBe(true);
+    const totals = aggregateMonthTotals(filtered);
+    expect(totals.income).toBeGreaterThanOrEqual(300);
+  });
+
   it('filters by date range and category set', () => {
     const filtered = filterBudgetTransactions(txs, {
       start: '2024-10-01T00:00:00.000Z',
@@ -250,7 +275,7 @@ describe('aggregateCategorySpend', () => {
     expect(rows[3]?.percent).toBeCloseTo((30 / expenseTotal) * 100);
   });
 
-  it('ignores income and non-expense categories except other and transfer', () => {
+  it('includes all outgoing amounts including salary debits', () => {
     const withSalaryDebit: Transaction[] = [
       ...txs,
       {
@@ -263,9 +288,9 @@ describe('aggregateCategorySpend', () => {
         status: 'completed',
       },
     ];
-    expect(aggregateCategorySpend(withSalaryDebit).some((r) => r.category === 'salary')).toBe(
-      false,
-    );
+    const rows = aggregateCategorySpend(withSalaryDebit);
+    expect(rows.some((r) => r.category === 'salary')).toBe(true);
+    expect(rows.find((r) => r.category === 'salary')?.total).toBe(999);
   });
 
   it('filters by month key when provided', () => {
@@ -279,13 +304,26 @@ describe('aggregateCategorySpend', () => {
   });
 });
 
-describe('aggregateTopRecipients', () => {
+describe('aggregateTopCounterparties', () => {
   it('ranks outgoing spend by recipient', () => {
-    const rows = aggregateTopRecipients(txs, 3);
+    const rows = aggregateTopCounterparties(txs, 3, 'out');
     expect(rows.map((r) => r.recipientName)).toEqual(['Utility', 'Friend', 'Cafe']);
     expect(rows[0]?.total).toBe(120);
     const expenseTotal = 40 + 120 + 30 + 50;
     expect(rows[0]?.percent).toBeCloseTo((120 / expenseTotal) * 100);
+  });
+
+  it('ranks incoming amounts by counterparty', () => {
+    const rows = aggregateTopCounterparties(txs, 3, 'in');
+    expect(rows.map((r) => r.recipientName)).toEqual(['Employer']);
+    expect(rows[0]?.total).toBe(2000);
+    expect(rows[0]?.percent).toBeCloseTo(100);
+  });
+
+  it('aggregateTopRecipients remains an outgoing alias', () => {
+    expect(aggregateTopRecipients(txs, 2)).toEqual(
+      aggregateTopCounterparties(txs, 2, 'out'),
+    );
   });
 });
 
