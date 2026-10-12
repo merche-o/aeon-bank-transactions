@@ -1,14 +1,48 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  BudgetCashFlowHero,
+  BudgetCategoryDonut,
+  BudgetCategoryLegend,
+  BudgetEmptyState,
+  BudgetIncomeExpenseChart,
+  BudgetMonthOutlook,
+  BudgetReportControls,
+  BudgetTopRecipients,
+} from '@/presentation/widgets/budget';
 import { useTheme } from '@/theme';
 
 import { useBudgetViewModel } from '../viewmodels/useBudgetViewModel';
+
+const CATEGORY_PALETTE = [
+  'primary',
+  'accent',
+  'navy',
+  'success',
+  'error',
+  'primaryMuted',
+] as const;
+
+function resolveSliceColor(
+  colors: ReturnType<typeof useTheme>['colors'],
+  index: number,
+): string {
+  const key = CATEGORY_PALETTE[index % CATEGORY_PALETTE.length];
+  return colors[key];
+}
 
 export function BudgetView() {
   const vm = useBudgetViewModel();
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
+
+  const showReport = !vm.loading;
+
+  const categoryWithColors = vm.categoryRows.map((row, index) => ({
+    ...row,
+    color: resolveSliceColor(colors, index),
+  }));
 
   return (
     <SafeAreaView
@@ -18,8 +52,8 @@ export function BudgetView() {
     >
       <ScrollView
         contentContainerStyle={{
+          gap: spacing.xl,
           paddingBottom: spacing.xxxl,
-          paddingHorizontal: spacing.lg,
           paddingTop: spacing.lg,
         }}
       >
@@ -28,216 +62,109 @@ export function BudgetView() {
             color: colors.textPrimary,
             fontSize: typography.fontSize.xxl,
             fontWeight: typography.fontWeight.bold,
-            marginBottom: spacing.lg,
+            paddingHorizontal: spacing.lg,
           }}
         >
           {vm.labels.title}
         </Text>
 
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.borderSubtle,
-              marginBottom: spacing.xl,
-              padding: spacing.lg,
-            },
-          ]}
-        >
+        {showReport ? (
+          <BudgetReportControls
+            categoryFilter={vm.categoryFilter}
+            customEnd={vm.customEnd}
+            customStart={vm.customStart}
+            labels={vm.labels.controls}
+            locale={vm.locale}
+            onCategoryChange={vm.setCategoryFilter}
+            onCustomEndChange={vm.setCustomEnd}
+            onCustomStartChange={vm.setCustomStart}
+            onPeriodChange={vm.setPeriod}
+            period={vm.period}
+          />
+        ) : null}
+
+        {vm.loading ? (
           <Text
             style={{
               color: colors.textMuted,
-              fontSize: typography.fontSize.sm,
-              marginBottom: spacing.md,
+              fontSize: typography.fontSize.md,
+              paddingHorizontal: spacing.lg,
             }}
           >
-            {vm.labels.thisMonth}
+            {vm.labels.loading}
           </Text>
-          <View style={styles.summaryRow}>
-            <SummaryBlock
-              label={vm.labels.income}
-              testID="budget-income"
-              tone="success"
-              value={vm.incomeFormatted}
+        ) : vm.isEmpty ? (
+          <BudgetEmptyState message={vm.labels.empty} />
+        ) : vm.noMatching ? (
+          <BudgetEmptyState message={vm.labels.noMatching} testID="budget-no-matching" />
+        ) : (
+          <>
+            <BudgetCashFlowHero
+              expensesFormatted={vm.expensesFormatted}
+              incomeFormatted={vm.incomeFormatted}
+              labels={vm.labels.hero}
+              netFormatted={vm.netFormatted}
+              netPositive={vm.netPositive}
+              vsPriorLabel={vm.vsPriorLabel}
             />
-            <SummaryBlock
-              label={vm.labels.expenses}
-              testID="budget-expenses"
-              tone="error"
-              value={vm.expensesFormatted}
+
+            <BudgetIncomeExpenseChart labels={vm.labels.chart} months={vm.monthlyBars} />
+
+            <View style={[styles.donutSection, { gap: spacing.lg, paddingHorizontal: spacing.lg }]}>
+              <BudgetCategoryDonut
+                centerLabel={vm.labels.category.title}
+                slices={categoryWithColors.map((row) => ({
+                  category: row.category,
+                  color: row.color,
+                  percent: row.percent,
+                  total: row.total,
+                }))}
+              />
+              <View style={styles.legendFlex}>
+                <BudgetCategoryLegend
+                  emptyLabel={vm.labels.category.empty}
+                  rows={categoryWithColors.map((row) => ({
+                    category: row.category,
+                    color: row.color,
+                    formatted: row.formatted,
+                    label: row.label,
+                    percentLabel: row.percentLabel,
+                  }))}
+                  title={vm.labels.category.title}
+                />
+              </View>
+            </View>
+
+            <BudgetTopRecipients
+              emptyLabel={vm.labels.topRecipients.empty}
+              rows={vm.topRecipientRows}
+              title={vm.labels.topRecipients.title}
             />
-          </View>
-        </View>
 
-        <Text
-          style={{
-            color: colors.textPrimary,
-            fontSize: typography.fontSize.lg,
-            fontWeight: typography.fontWeight.semibold,
-            marginBottom: spacing.md,
-          }}
-        >
-          {vm.labels.byMonth}
-        </Text>
-        <View style={{ gap: spacing.sm, marginBottom: spacing.xl }}>
-          {vm.monthlyBars.map((month) => {
-            const widthPct = (month.expenseTotal / vm.maxMonthlyExpense) * 100;
-            return (
-              <View key={month.monthKey} testID={`budget-bar-${month.monthKey}`}>
-                <View style={styles.barLabelRow}>
-                  <Text style={{ color: colors.textSecondary, fontSize: typography.fontSize.sm }}>
-                    {month.label}
-                  </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: typography.fontSize.xs }}>
-                    {month.expenseTotal.toLocaleString('en-MY', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.barTrack,
-                    { backgroundColor: colors.borderSubtle, marginTop: spacing.xxs },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.barFill,
-                      {
-                        backgroundColor: colors.primary,
-                        width: `${Math.max(widthPct, month.expenseTotal > 0 ? 4 : 0)}%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        <Text
-          style={{
-            color: colors.textPrimary,
-            fontSize: typography.fontSize.lg,
-            fontWeight: typography.fontWeight.semibold,
-            marginBottom: spacing.md,
-          }}
-        >
-          {vm.labels.byCategory}
-        </Text>
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.borderSubtle,
-              padding: spacing.lg,
-            },
-          ]}
-        >
-          {vm.categorySpend.length === 0 ? (
-            <Text style={{ color: colors.textMuted, fontSize: typography.fontSize.sm }}>—</Text>
-          ) : (
-            vm.categorySpend.map((row) => (
-              <View
-                key={row.category}
-                style={[
-                  styles.categoryRow,
-                  { borderBottomColor: colors.borderSubtle, paddingVertical: spacing.sm },
-                ]}
-                testID={`budget-category-${row.category}`}
-              >
-                <Text style={{ color: colors.textPrimary, fontSize: typography.fontSize.md }}>
-                  {row.label}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.error,
-                    fontSize: typography.fontSize.md,
-                    fontWeight: typography.fontWeight.semibold,
-                  }}
-                >
-                  {row.formatted}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
+            <BudgetMonthOutlook
+              dailyAverageFormatted={vm.outlook.dailyAverageFormatted}
+              labels={vm.labels.outlook}
+              projectedFormatted={vm.outlook.projectedFormatted}
+              upcomingCount={vm.outlook.upcomingCount}
+              upcomingFormatted={vm.outlook.upcomingFormatted}
+              visible={vm.outlookVisible}
+            />
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function SummaryBlock({
-  label,
-  value,
-  testID,
-  tone,
-}: {
-  label: string;
-  value: string;
-  testID: string;
-  tone: 'success' | 'error';
-}) {
-  const theme = useTheme();
-  const { colors, typography, spacing } = theme;
-  const valueColor = tone === 'success' ? colors.success : colors.error;
-
-  return (
-    <View style={styles.summaryBlock} testID={testID}>
-      <Text style={{ color: colors.textMuted, fontSize: typography.fontSize.xs, marginBottom: spacing.xxs }}>
-        {label}
-      </Text>
-      <Text
-        style={{
-          color: valueColor,
-          fontSize: typography.fontSize.lg,
-          fontWeight: typography.fontWeight.bold,
-        }}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  barFill: {
-    borderRadius: 6,
-    height: '100%',
-    minWidth: 0,
-  },
-  barLabelRow: {
+  donutSection: {
     alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  barTrack: {
-    borderRadius: 6,
-    height: 10,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  categoryRow: {
-    alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
   },
   flex: {
     flex: 1,
   },
-  summaryBlock: {
-    flex: 1,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 16,
+  legendFlex: {
+    alignSelf: 'stretch',
   },
 });
