@@ -147,8 +147,6 @@ export function BudgetView() {
               vsPriorLabel={vm.vsPriorLabel}
             />
 
-            <BudgetIncomeExpenseChart labels={vm.labels.chart} months={vm.monthlyBars} />
-
             <BudgetCategoryBreakdown
               emptyLabel={vm.labels.category.empty}
               rows={categoryWithColors}
@@ -156,6 +154,8 @@ export function BudgetView() {
               totalCaption={vm.labels.category.totalCaption}
               totalFormatted={vm.categorySpendTotalFormatted}
             />
+
+            <BudgetIncomeExpenseChart labels={vm.labels.chart} months={vm.monthlyBars} />
 
             <BudgetTopFlows
               earningRows={vm.topEarningRows}
