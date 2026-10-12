@@ -287,6 +287,7 @@ export function useBudgetViewModel() {
       category: {
         title: t('budget.byCategory', locale),
         empty: t('budget.emptyPlaceholder', locale),
+        totalCaption: t('budget.totalSpend', locale),
       },
       topFlows: {
         spendingTitle: t('budget.topSpending', locale),

@@ -359,9 +359,16 @@ export function aggregateMonthlySpend(
   return aggregateMonthlySpendLegacy(transactions, monthKeysOrCount);
 }
 
+const DEFAULT_CATEGORY_SLICE_LIMIT = 4;
+
+/**
+ * Aggregate outgoing spend by category. When more than `maxSlices` categories
+ * exist, keep the top (maxSlices - 1) and roll the rest into `other`.
+ */
 export function aggregateCategorySpend(
   transactions: Transaction[],
   monthKeyFilter?: string,
+  maxSlices: number = DEFAULT_CATEGORY_SLICE_LIMIT + 1,
 ): CategorySpend[] {
   const map = new Map<TransactionCategory, number>();
 
@@ -379,12 +386,38 @@ export function aggregateCategorySpend(
     .map(([category, total]) => ({ category, total }))
     .sort((a, b) => b.total - a.total);
 
-  const expenseGrandTotal = rows.reduce((sum, r) => sum + r.total, 0);
-  return rows.map(({ category, total }) => ({
+  const capped = collapseCategorySpendTail(rows, maxSlices);
+  const expenseGrandTotal = capped.reduce((sum, r) => sum + r.total, 0);
+  return capped.map(({ category, total }) => ({
     category,
     total,
     percent: expenseGrandTotal === 0 ? 0 : (total / expenseGrandTotal) * 100,
   }));
+}
+
+export function collapseCategorySpendTail(
+  rows: Array<{ category: TransactionCategory; total: number }>,
+  maxSlices: number = DEFAULT_CATEGORY_SLICE_LIMIT + 1,
+): Array<{ category: TransactionCategory; total: number }> {
+  if (rows.length <= maxSlices || maxSlices < 2) {
+    return rows;
+  }
+
+  const keepCount = maxSlices - 1;
+  const nonOther = rows.filter((row) => row.category !== 'other');
+  const head = nonOther.slice(0, keepCount);
+  const headCategories = new Set(head.map((row) => row.category));
+  const otherTotal = rows
+    .filter((row) => !headCategories.has(row.category))
+    .reduce((sum, row) => sum + row.total, 0);
+
+  if (otherTotal <= 0) {
+    return head;
+  }
+
+  return [...head, { category: 'other' as const, total: otherTotal }].sort(
+    (a, b) => b.total - a.total,
+  );
 }
 
 export type CounterpartyDirection = 'out' | 'in';

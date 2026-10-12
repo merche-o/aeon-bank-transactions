@@ -20,6 +20,11 @@ export {
   type BudgetCategoryLegendProps,
 } from './BudgetCategoryLegend';
 export {
+  BudgetCategoryBreakdown,
+  type BudgetCategoryBreakdownRow,
+  type BudgetCategoryBreakdownProps,
+} from './BudgetCategoryBreakdown';
+export {
   BudgetTopRecipients,
   type BudgetTopRecipientRow,
   type BudgetTopRecipientsProps,

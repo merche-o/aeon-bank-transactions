@@ -4,8 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   BudgetCashFlowHero,
-  BudgetCategoryDonut,
-  BudgetCategoryLegend,
+  BudgetCategoryBreakdown,
   BudgetEmptyState,
   BudgetIncomeExpenseChart,
   BudgetMonthOutlook,
@@ -150,30 +149,13 @@ export function BudgetView() {
 
             <BudgetIncomeExpenseChart labels={vm.labels.chart} months={vm.monthlyBars} />
 
-            <View style={[styles.donutSection, { gap: spacing.lg }]}>
-              <BudgetCategoryDonut
-                centerLabel={vm.categorySpendTotalFormatted}
-                slices={categoryWithColors.map((row) => ({
-                  category: row.category,
-                  color: row.color,
-                  percent: row.percent,
-                  total: row.total,
-                }))}
-              />
-              <View style={styles.legendFlex}>
-                <BudgetCategoryLegend
-                  emptyLabel={vm.labels.category.empty}
-                  rows={categoryWithColors.map((row) => ({
-                    category: row.category,
-                    color: row.color,
-                    formatted: row.formatted,
-                    label: row.label,
-                    percentLabel: row.percentLabel,
-                  }))}
-                  title={vm.labels.category.title}
-                />
-              </View>
-            </View>
+            <BudgetCategoryBreakdown
+              emptyLabel={vm.labels.category.empty}
+              rows={categoryWithColors}
+              title={vm.labels.category.title}
+              totalCaption={vm.labels.category.totalCaption}
+              totalFormatted={vm.categorySpendTotalFormatted}
+            />
 
             <BudgetTopFlows
               earningRows={vm.topEarningRows}
@@ -199,10 +181,6 @@ export function BudgetView() {
 }
 
 const styles = StyleSheet.create({
-  donutSection: {
-    alignItems: 'center',
-    flexDirection: 'column',
-  },
   flex: {
     flex: 1,
   },
@@ -217,8 +195,5 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 4,
-  },
-  legendFlex: {
-    alignSelf: 'stretch',
   },
 });

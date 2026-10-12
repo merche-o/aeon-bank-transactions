@@ -5,6 +5,7 @@ import {
   aggregateMonthlySpend,
   aggregateTopCounterparties,
   aggregateTopRecipients,
+  collapseCategorySpendTail,
   filterBudgetTransactions,
   periodOverPeriodChange,
   priorRangeOfEqualLength,
@@ -301,6 +302,60 @@ describe('aggregateCategorySpend', () => {
 
   it('returns zero percent when expense total is zero', () => {
     expect(aggregateCategorySpend([])).toEqual([]);
+  });
+
+  it('rolls categories beyond the slice limit into other', () => {
+    const many: Transaction[] = [
+      ...txs,
+      {
+        refId: 's1',
+        transferDate: '2024-10-12T12:00:00Z',
+        recipientName: 'Job',
+        transferName: 'Adj',
+        amount: -200,
+        category: 'salary',
+        status: 'completed',
+      },
+      {
+        refId: 'e1',
+        transferDate: '2024-10-12T12:00:00Z',
+        recipientName: 'Cinema',
+        transferName: 'Movie',
+        amount: -80,
+        category: 'entertainment',
+        status: 'completed',
+      },
+      {
+        refId: 'p1',
+        transferDate: '2024-10-12T12:00:00Z',
+        recipientName: 'Shop',
+        transferName: 'Stuff',
+        amount: -60,
+        category: 'personal',
+        status: 'completed',
+      },
+    ];
+    const rows = aggregateCategorySpend(many);
+    expect(rows.length).toBeLessThanOrEqual(5);
+    expect(rows.some((r) => r.category === 'other')).toBe(true);
+    const total = rows.reduce((sum, r) => sum + r.total, 0);
+    expect(total).toBeCloseTo(240 + 200 + 80 + 60);
+  });
+
+  it('collapseCategorySpendTail keeps top non-other and merges the rest', () => {
+    const collapsed = collapseCategorySpendTail(
+      [
+        { category: 'bills', total: 100 },
+        { category: 'food', total: 90 },
+        { category: 'transfer', total: 80 },
+        { category: 'entertainment', total: 70 },
+        { category: 'personal', total: 60 },
+        { category: 'other', total: 10 },
+      ],
+      5,
+    );
+    expect(collapsed).toHaveLength(5);
+    expect(collapsed.find((r) => r.category === 'other')?.total).toBe(70);
   });
 });
 
