@@ -106,13 +106,20 @@ Use stable `testID`s (e.g. `transaction-list`, `search-input`, `filter-type-*`, 
 
 ### Continuous integration
 
-CI is expected to gate merges on:
+On every PR and push to `main` / `develop`, GitHub Actions runs:
 
 ```bash
-npx expo lint
+npm ci
+npx expo lint   # non-blocking
 npx tsc --noEmit
 npm test
 ```
+
+On successful pushes to **`main`**, a second job creates a **GitHub Release** (`web-<short-sha>`) whose release notes include the production web URL:
+
+**https://aeon-bank-transactions.vercel.app**
+
+The same URL is also written to the Actions job summary. See [Releases](https://github.com/merche-o/aeon-bank-transactions/releases).
 
 Detox can be added as a separate workflow step once prebuild artifacts and simulator runners are wired and flaky tests are addressed.
 

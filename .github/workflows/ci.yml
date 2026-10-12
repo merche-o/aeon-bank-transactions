@@ -7,6 +7,9 @@ on:
       - main
       - develop
 
+permissions:
+  contents: read
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -33,3 +36,71 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Publish web preview URL
+        if: github.ref == 'refs/heads/main'
+        run: |
+          {
+            echo "## Web preview (Vercel)"
+            echo ""
+            echo "Production app: https://aeon-bank-transactions.vercel.app"
+            echo ""
+            echo "Commit: \`${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: GitHub Release
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create release with Vercel URL
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERCEL_APP_URL: https://aeon-bank-transactions.vercel.app
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          TAG="web-${SHORT_SHA}"
+          TITLE="Web release ${SHORT_SHA}"
+          NOTES="$(cat <<EOF
+          ## AEON Bank Transactions
+
+          Quality checks passed on \`main\`.
+
+          ### Live app (Vercel)
+          ${VERCEL_APP_URL}
+
+          ### Commit
+          - SHA: \`${GITHUB_SHA}\`
+          - Message: $(git log -1 --pretty=%s)
+
+          ### Verify locally
+          \`\`\`bash
+          npm ci
+          npm test
+          npm run build:web
+          \`\`\`
+          EOF
+          )"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists"
+          else
+            gh release create "$TAG" \
+              --title "$TITLE" \
+              --notes "$NOTES" \
+              --latest
+          fi
+
+          {
+            echo "## GitHub Release"
+            echo ""
+            echo "- Tag: \`$TAG\`"
+            echo "- App: ${VERCEL_APP_URL}"
+            echo "- Releases: https://github.com/${{ github.repository }}/releases/tag/${TAG}"
+          } >> "$GITHUB_STEP_SUMMARY"
