@@ -145,12 +145,51 @@ function shiftUtcMonths(year: number, monthIndex0: number, delta: number): { yea
   return { year: d.getUTCFullYear(), monthIndex0: d.getUTCMonth() };
 }
 
+function utcStartOfCalendarDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
+  );
+}
+
+function utcEndOfCalendarDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999),
+  );
+}
+
 export function resolveBudgetRange(
   preset: BudgetPeriodPreset,
   customStart?: string,
   customEnd?: string,
   now: Date = new Date(),
 ): BudgetRange {
+  if (preset === 'custom') {
+    if (!customStart || !customEnd) {
+      throw new Error('custom preset requires customStart and customEnd');
+    }
+    let startDate = new Date(customStart);
+    let endDate = new Date(customEnd);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new Error('custom preset requires valid dates');
+    }
+    if (startDate.getTime() > endDate.getTime()) {
+      const swap = startDate;
+      startDate = endDate;
+      endDate = swap;
+    }
+
+    const startBound = utcStartOfCalendarDay(startDate);
+    const endBound = utcEndOfCalendarDay(endDate);
+    const firstKey = monthKeyFromUtcDate(startBound);
+    const lastKey = monthKeyFromUtcDate(endBound);
+
+    return {
+      start: startBound.toISOString(),
+      end: endBound.toISOString(),
+      monthKeys: monthKeysInclusive(firstKey, lastKey),
+    };
+  }
+
   const nowY = now.getUTCFullYear();
   const nowM = now.getUTCMonth();
 
@@ -180,18 +219,6 @@ export function resolveBudgetRange(
       const shifted = shiftUtcMonths(nowY, nowM, -5);
       startY = shifted.year;
       startM = shifted.monthIndex0;
-      break;
-    }
-    case 'custom': {
-      if (!customStart || !customEnd) {
-        throw new Error('custom preset requires customStart and customEnd');
-      }
-      const startDate = new Date(customStart);
-      const endDate = new Date(customEnd);
-      startY = startDate.getUTCFullYear();
-      startM = startDate.getUTCMonth();
-      endY = endDate.getUTCFullYear();
-      endM = endDate.getUTCMonth();
       break;
     }
     default: {

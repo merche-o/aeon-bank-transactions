@@ -100,16 +100,44 @@ describe('resolveBudgetRange', () => {
     expect(range.monthKeys[5]).toBe('2024-10');
   });
 
-  it('resolves custom range with padded month keys', () => {
+  it('resolves custom range with day-accurate bounds and month keys', () => {
     const range = resolveBudgetRange(
       'custom',
-      '2024-09-15T00:00:00Z',
-      '2024-11-02T00:00:00Z',
+      '2024-09-15T12:00:00.000Z',
+      '2024-11-02T12:00:00.000Z',
       now,
     );
     expect(range.monthKeys).toEqual(['2024-09', '2024-10', '2024-11']);
+    expect(range.start).toBe('2024-09-15T00:00:00.000Z');
+    expect(range.end).toBe('2024-11-02T23:59:59.999Z');
+  });
+
+  it('swaps inverted custom From/To so today is included', () => {
+    const range = resolveBudgetRange(
+      'custom',
+      '2024-10-12T12:00:00.000Z',
+      '2024-09-01T12:00:00.000Z',
+      now,
+    );
     expect(range.start).toBe('2024-09-01T00:00:00.000Z');
-    expect(range.end).toBe('2024-11-30T23:59:59.999Z');
+    expect(range.end).toBe('2024-10-12T23:59:59.999Z');
+    expect(range.monthKeys).toEqual(['2024-09', '2024-10']);
+
+    const todayTx: Transaction = {
+      refId: 'today',
+      transferDate: '2024-10-12T08:30:00.000Z',
+      recipientName: 'Cafe',
+      transferName: 'Lunch',
+      amount: -12,
+      category: 'food',
+      status: 'completed',
+    };
+    const filtered = filterBudgetTransactions([todayTx], {
+      start: range.start,
+      end: range.end,
+      categories: ['food'],
+    });
+    expect(filtered).toHaveLength(1);
   });
 });
 
