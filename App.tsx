@@ -1,16 +1,18 @@
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { MockTransactionRepository } from '@/repositories/MockTransactionRepository';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { setTransactionRepository } from '@/store/transactionStore';
+import {
+  setTransactionRepository,
+  useTransactionStore,
+} from '@/store/transactionStore';
 import { ThemeProvider, useTheme } from '@/theme';
-
-setTransactionRepository(new MockTransactionRepository(400));
 
 function NavigationRoot() {
   const theme = useTheme();
@@ -48,10 +50,29 @@ function ThemedApp() {
   );
 }
 
+async function bootstrapTransactions(): Promise<void> {
+  try {
+    const { SqliteTransactionRepository } = await import(
+      '@/repositories/SqliteTransactionRepository'
+    );
+    setTransactionRepository(new SqliteTransactionRepository());
+    await useTransactionStore.getState().fetch();
+  } catch {
+    if (Platform.OS === 'web') {
+      setTransactionRepository(new MockTransactionRepository(400));
+      await useTransactionStore.getState().fetch();
+      return;
+    }
+    setTransactionRepository(new MockTransactionRepository(400));
+    await useTransactionStore.getState().fetch();
+  }
+}
+
 export default function App() {
   const [hydrated, setHydrated] = useState(() =>
     usePreferencesStore.persist.hasHydrated(),
   );
+  const [dataReady, setDataReady] = useState(false);
 
   useEffect(() => {
     const unsubscribe = usePreferencesStore.persist.onFinishHydration(() => {
@@ -61,7 +82,22 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  if (!hydrated) {
+  useEffect(() => {
+    if (!hydrated) {
+      return;
+    }
+    let cancelled = false;
+    void bootstrapTransactions().finally(() => {
+      if (!cancelled) {
+        setDataReady(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated]);
+
+  if (!hydrated || !dataReady) {
     return (
       <View style={styles.boot}>
         <ActivityIndicator size="large" />
@@ -70,9 +106,11 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemedApp />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.flex}>
+      <SafeAreaProvider>
+        <ThemedApp />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -81,5 +119,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
+  },
+  flex: {
+    flex: 1,
   },
 });

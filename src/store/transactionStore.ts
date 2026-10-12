@@ -1,18 +1,34 @@
 import { create } from 'zustand';
 
-import type { Transaction } from '@/models/Transaction';
+import type {
+  NewTransactionInput,
+  Transaction,
+  TransactionCategory,
+} from '@/models/Transaction';
 import { MockTransactionRepository } from '@/repositories/MockTransactionRepository';
 import type { TransactionRepository } from '@/repositories/TransactionRepository';
+import { canAfford, sumBalance } from '@/utils/balance';
 import { sortTransactions } from '@/utils/sortTransactions';
+
+export class InsufficientFundsError extends Error {
+  constructor() {
+    super('INSUFFICIENT_FUNDS');
+    this.name = 'InsufficientFundsError';
+  }
+}
 
 export interface TransactionStoreState {
   transactions: Transaction[];
   loading: boolean;
+  isRefreshing: boolean;
   error: string | null;
+  balance: number;
   fetch: () => Promise<void>;
   refresh: () => Promise<void>;
   getByRefId: (refId: string) => Transaction | undefined;
   ensureByRefId: (refId: string) => Promise<Transaction | null>;
+  addTransaction: (input: NewTransactionInput) => Promise<Transaction>;
+  setCategory: (refId: string, category: TransactionCategory) => Promise<void>;
   clearError: () => void;
 }
 
@@ -26,32 +42,51 @@ export function resetTransactionRepository(): void {
   transactionRepository = new MockTransactionRepository(0);
 }
 
-async function loadTransactions(
-  set: (
-    partial:
-      | Partial<TransactionStoreState>
-      | ((state: TransactionStoreState) => Partial<TransactionStoreState>),
-  ) => void,
-): Promise<void> {
-  set({ loading: true, error: null });
-  try {
-    const items = await transactionRepository.getTransactions();
-    set({ transactions: sortTransactions(items), loading: false, error: null });
-  } catch (cause) {
-    const message =
-      cause instanceof Error ? cause.message : 'Failed to load transactions';
-    set({ loading: false, error: message });
-  }
+function withBalance(transactions: Transaction[]) {
+  return {
+    transactions,
+    balance: sumBalance(transactions),
+  };
 }
 
 export const useTransactionStore = create<TransactionStoreState>((set, get) => ({
   transactions: [],
   loading: false,
+  isRefreshing: false,
   error: null,
+  balance: 0,
 
-  fetch: () => loadTransactions(set),
+  fetch: async () => {
+    set({ loading: true, error: null });
+    try {
+      const items = await transactionRepository.getTransactions();
+      set({
+        ...withBalance(sortTransactions(items)),
+        loading: false,
+        error: null,
+      });
+    } catch (cause) {
+      const message =
+        cause instanceof Error ? cause.message : 'Failed to load transactions';
+      set({ loading: false, error: message });
+    }
+  },
 
-  refresh: () => loadTransactions(set),
+  refresh: async () => {
+    set({ isRefreshing: true, error: null });
+    try {
+      const items = await transactionRepository.getTransactions();
+      set({
+        ...withBalance(sortTransactions(items)),
+        isRefreshing: false,
+        error: null,
+      });
+    } catch (cause) {
+      const message =
+        cause instanceof Error ? cause.message : 'Failed to load transactions';
+      set({ isRefreshing: false, error: message });
+    }
+  },
 
   getByRefId: (refId: string) =>
     get().transactions.find((transaction) => transaction.refId === refId),
@@ -63,11 +98,32 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
     }
     const fetched = await transactionRepository.getTransactionByRefId(refId);
     if (fetched) {
-      set((state) => ({
-        transactions: sortTransactions([...state.transactions, fetched]),
-      }));
+      set((state) =>
+        withBalance(sortTransactions([...state.transactions, fetched])),
+      );
     }
     return fetched;
+  },
+
+  addTransaction: async (input: NewTransactionInput) => {
+    const { balance } = get();
+    if (!canAfford(balance, input.amount)) {
+      throw new InsufficientFundsError();
+    }
+    const created = await transactionRepository.addTransaction(input);
+    set((state) =>
+      withBalance(sortTransactions([created, ...state.transactions])),
+    );
+    return created;
+  },
+
+  setCategory: async (refId, category) => {
+    await transactionRepository.updateTransactionCategory(refId, category);
+    set((state) => ({
+      transactions: state.transactions.map((tx) =>
+        tx.refId === refId ? { ...tx, category } : tx,
+      ),
+    }));
   },
 
   clearError: () => set({ error: null }),
@@ -77,6 +133,8 @@ export function resetTransactionStore(): void {
   useTransactionStore.setState({
     transactions: [],
     loading: false,
+    isRefreshing: false,
     error: null,
+    balance: 0,
   });
 }

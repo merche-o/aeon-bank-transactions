@@ -5,7 +5,7 @@ Expo + React Native + TypeScript banking MVP. Follow Clean Architecture + MVVM. 
 ## Stack
 
 - Expo (see `package.json` for SDK major; check https://docs.expo.dev/versions/v\<major\>.0.0/ before Expo APIs)
-- React Navigation native stack (not Expo Router)
+- React Navigation: drawer + bottom tabs + native stack (not Expo Router)
 - Zustand for app state
 - TypeScript `strict`, never `any`
 - Jest + RNTL + Detox

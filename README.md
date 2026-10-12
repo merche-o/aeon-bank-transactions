@@ -4,16 +4,23 @@ Mobile engineer assessment project: an Expo/React Native banking MVP for browsin
 
 ## Features
 
+- **Navigation** — Bottom tabs for **Transactions** and **Budget**; drawer for app settings (language, theme, profile).
+- **Balance & profile** — Running balance from all transactions; greeting and profile summary on the transactions home header.
 - **Transaction list** — Latest-first sorting; tap a row to open detail by `refId`.
-- **Detail screen** — Full transfer metadata with formatted currency and dates.
+- **Detail screen** — Full transfer metadata with formatted currency, dates, and **category**.
+- **Add transaction** — Form to record incoming/outgoing transfers; persisted locally via **SQLite** (`expo-sqlite`) through the repository port.
+- **Categories** — Salary, transfer, food, entertainment, bills, personal, and other; filter the list by category and edit category on detail where supported.
 - **Share** — Native share sheet via `ShareService`, with receipt text built from domain data and passed through `sanitizeSharePayload`.
 - **Search & filters**
-  - Debounced search (~300ms) across reference ID, recipient, transfer name, and amount.
+  - Debounced search (~300ms) across reference ID, recipient, transfer name, category, and amount.
   - Type chips: all / incoming / outgoing.
-  - Date range chips: all / last 7 days / last 30 days.
-- **Locales** — English (`en`) and Bahasa Malaysia (`bm`) via the `t()` helper; language toggle on the list screen.
-- **Theme** — Light, dark, and system appearance using design tokens; theme toggle on the list screen.
-- **Pull-to-refresh** — Reload transactions from the repository on the list screen.
+  - Category filter: all categories or a single category.
+  - Date range: all / last 7 days / last 30 days / **custom start–end range**.
+- **Budget tab** — Monthly income vs expense trends and spending breakdown by category (from domain utils).
+- **Insufficient funds** — Live balance check when adding an outgoing transfer; clear error when the debit would exceed available balance.
+- **Locales** — English (`en`) and Bahasa Malaysia (`bm`) via the `t()` helper; language toggle in drawer settings.
+- **Theme** — Light, dark, and system appearance using design tokens; theme toggle in drawer settings.
+- **Pull-to-refresh** — Reload transactions via `refresh()` (`isRefreshing`), without toggling the initial full-screen loading state.
 - **UI states** — Loading spinner, empty list, full-screen error with retry, and “no matching results” when filters exclude all rows.
 
 ## Setup & Run
@@ -75,7 +82,7 @@ Coverage in this repo includes:
 
 | Layer | Examples |
 |-------|----------|
-| **Unit** | `src/utils/` (sort, filter, format, amount color), `src/i18n/`, `src/theme/` |
+| **Unit** | `src/utils/` (sort, filter, format, balance, budget stats, amount color), `src/i18n/`, `src/theme/` |
 | **Mock / boundary** | `MockTransactionRepository`, `transactionStore` with injectable repository |
 | **Security** | `SecureLogger`, `sanitizeSharePayload` |
 | **Component (RNTL)** | Widgets such as `TransactionCard`, `AmountText`, `ThemeProvider` |
@@ -219,7 +226,7 @@ Banking MVP conventions applied in code:
 - **PDF receipt** generation before share (in addition to plain-text receipts)
 - **Offline sync** and explicit **cache invalidation** strategy
 - **Certificate pinning** / hardened network layer for production API traffic
-- **Exact custom date-range picker** (beyond preset 7d / 30d chips)
+- **Editable opening balance** separate from transaction-derived balance
 - **Additional locales** beyond English and Bahasa Malaysia
 - **Accessibility audit** (labels, contrast, screen reader flows, focus order)
 - **Detox suite expansion** and **CI gating** once E2E is stable on simulators

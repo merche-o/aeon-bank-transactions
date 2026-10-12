@@ -8,6 +8,7 @@ import { formatDate } from '@/utils/formatDate';
 
 import { useTransactionDetailViewModel } from '../viewmodels/useTransactionDetailViewModel';
 import { AmountText } from '../widgets/AmountText';
+import { CategorySelectChips } from '../widgets/CategorySelectChips';
 import { DetailRow } from '../widgets/DetailRow';
 import { StateMessage } from '../widgets/StateMessage';
 
@@ -113,6 +114,30 @@ export function TransactionDetailView({ refId }: TransactionDetailViewProps) {
             label={vm.labels.transferName}
             testID="detail-transfer-name"
             value={transaction.transferName}
+          />
+          <DetailRow
+            label={vm.labels.category}
+            testID="detail-category"
+            value={vm.categoryLabel}
+          />
+        </View>
+
+        <View style={{ marginTop: spacing.lg }}>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.medium,
+              marginBottom: spacing.sm,
+            }}
+          >
+            {vm.labels.category}
+          </Text>
+          <CategorySelectChips
+            locale={vm.locale}
+            onChange={vm.updateCategory}
+            testIDPrefix="detail-category"
+            value={transaction.category}
           />
         </View>
 

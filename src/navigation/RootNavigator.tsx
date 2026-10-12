@@ -1,44 +1,28 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 
-import { TransactionDetailView } from '@/presentation/views/TransactionDetailView';
-import { TransactionListView } from '@/presentation/views/TransactionListView';
 import { useTheme } from '@/theme';
 
-import type { RootStackParamList } from './types';
+import { DrawerContent } from './DrawerContent';
+import { MainTabNavigator } from './MainTabNavigator';
+import type { DrawerParamList } from './types';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Drawer = createDrawerNavigator<DrawerParamList>();
 
 export function RootNavigator() {
   const theme = useTheme();
   const { colors } = theme;
 
   return (
-    <Stack.Navigator
+    <Drawer.Navigator
+      drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
-        contentStyle: { backgroundColor: colors.background },
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.primary,
-        headerTitleStyle: { color: colors.textPrimary },
+        drawerType: 'front',
+        headerShown: false,
+        drawerStyle: { backgroundColor: colors.background },
+        overlayColor: colors.overlay,
       }}
     >
-      <Stack.Screen
-        component={TransactionListView}
-        name="TransactionList"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        component={TransactionDetailScreen}
-        name="TransactionDetail"
-        options={{ title: '' }}
-      />
-    </Stack.Navigator>
+      <Drawer.Screen component={MainTabNavigator} name="MainTabs" />
+    </Drawer.Navigator>
   );
-}
-
-function TransactionDetailScreen({
-  route,
-}: NativeStackScreenProps<RootStackParamList, 'TransactionDetail'>) {
-  return <TransactionDetailView refId={route.params.refId} />;
 }

@@ -8,6 +8,7 @@ export const mockTransactionsResponse: TransactionsResponse = {
       recipientName: 'John Doe',
       transferName: 'Salary Payment',
       amount: 1500.0,
+      category: 'salary',
     },
     {
       refId: '456DEF',
@@ -15,6 +16,7 @@ export const mockTransactionsResponse: TransactionsResponse = {
       recipientName: 'Jane Smith',
       transferName: 'Invoice Payment',
       amount: 2300.75,
+      category: 'bills',
     },
     {
       refId: '789GHI',
@@ -22,6 +24,7 @@ export const mockTransactionsResponse: TransactionsResponse = {
       recipientName: 'Robert Brown',
       transferName: 'Refund',
       amount: -500.0,
+      category: 'other',
     },
     {
       refId: '101JKL',
@@ -29,6 +32,7 @@ export const mockTransactionsResponse: TransactionsResponse = {
       recipientName: 'Emily Davis',
       transferName: 'Bonus Payment',
       amount: 1200.0,
+      category: 'salary',
     },
   ],
 };

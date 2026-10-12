@@ -1,6 +1,7 @@
 import type { Transaction } from '@/models/Transaction';
 import type { TransactionRepository } from '@/repositories/TransactionRepository';
 import {
+  InsufficientFundsError,
   resetTransactionRepository,
   resetTransactionStore,
   setTransactionRepository,
@@ -14,6 +15,7 @@ const unsorted: Transaction[] = [
     recipientName: 'Emily Davis',
     transferName: 'Bonus Payment',
     amount: 1200,
+    category: 'salary',
   },
   {
     refId: '123ABC',
@@ -21,6 +23,7 @@ const unsorted: Transaction[] = [
     recipientName: 'John Doe',
     transferName: 'Salary Payment',
     amount: 1500,
+    category: 'salary',
   },
   {
     refId: '456DEF',
@@ -28,6 +31,7 @@ const unsorted: Transaction[] = [
     recipientName: 'Jane Smith',
     transferName: 'Invoice Payment',
     amount: 2300.75,
+    category: 'bills',
   },
 ];
 
@@ -37,6 +41,8 @@ function createMockRepository(
   return {
     getTransactions: jest.fn().mockResolvedValue(unsorted),
     getTransactionByRefId: jest.fn().mockResolvedValue(null),
+    addTransaction: jest.fn(),
+    updateTransactionCategory: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -62,16 +68,25 @@ describe('transactionStore', () => {
       '456DEF',
       '101JKL',
     ]);
+    expect(useTransactionStore.getState().balance).toBeCloseTo(5000.75);
   });
 
-  it('refresh reloads from repository', async () => {
+  it('refresh reloads from repository using isRefreshing not loading', async () => {
     const repository = createMockRepository();
     setTransactionRepository(repository);
 
     await useTransactionStore.getState().fetch();
-    await useTransactionStore.getState().refresh();
+    expect(useTransactionStore.getState().loading).toBe(false);
+
+    const refreshPromise = useTransactionStore.getState().refresh();
+    expect(useTransactionStore.getState().isRefreshing).toBe(true);
+    expect(useTransactionStore.getState().loading).toBe(false);
+
+    await refreshPromise;
 
     expect(repository.getTransactions).toHaveBeenCalledTimes(2);
+    expect(useTransactionStore.getState().isRefreshing).toBe(false);
+    expect(useTransactionStore.getState().loading).toBe(false);
   });
 
   it('getByRefId returns a cached transaction', async () => {
@@ -95,5 +110,56 @@ describe('transactionStore', () => {
     expect(useTransactionStore.getState().error).toBe('Network down');
     useTransactionStore.getState().clearError();
     expect(useTransactionStore.getState().error).toBeNull();
+  });
+
+  it('addTransaction rejects when balance is insufficient', async () => {
+    const repository = createMockRepository();
+    setTransactionRepository(repository);
+
+    await useTransactionStore.getState().fetch();
+    const countBefore = useTransactionStore.getState().transactions.length;
+
+    await expect(
+      useTransactionStore.getState().addTransaction({
+        transferDate: '2024-10-20T00:00:00Z',
+        recipientName: 'Big Co',
+        transferName: 'Huge bill',
+        amount: -999_999,
+        category: 'bills',
+      }),
+    ).rejects.toBeInstanceOf(InsufficientFundsError);
+
+    expect(repository.addTransaction).not.toHaveBeenCalled();
+    expect(useTransactionStore.getState().transactions).toHaveLength(countBefore);
+  });
+
+  it('addTransaction appends and updates balance when affordable', async () => {
+    const created: Transaction = {
+      refId: 'NEW1',
+      transferDate: '2024-10-20T00:00:00Z',
+      recipientName: 'Cafe',
+      transferName: 'Coffee',
+      amount: -10,
+      category: 'food',
+    };
+    const repository = createMockRepository({
+      addTransaction: jest.fn().mockResolvedValue(created),
+    });
+    setTransactionRepository(repository);
+
+    await useTransactionStore.getState().fetch();
+    const balanceBefore = useTransactionStore.getState().balance;
+
+    const result = await useTransactionStore.getState().addTransaction({
+      transferDate: created.transferDate,
+      recipientName: created.recipientName,
+      transferName: created.transferName,
+      amount: created.amount,
+      category: created.category,
+    });
+
+    expect(result).toEqual(created);
+    expect(useTransactionStore.getState().transactions[0]?.refId).toBe('NEW1');
+    expect(useTransactionStore.getState().balance).toBeCloseTo(balanceBefore - 10);
   });
 });

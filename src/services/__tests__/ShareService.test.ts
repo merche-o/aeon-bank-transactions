@@ -12,6 +12,7 @@ const transaction: Transaction = {
   recipientName: 'John Doe',
   transferName: 'Salary Payment',
   amount: 1500,
+  category: 'salary',
 };
 
 const labels = {

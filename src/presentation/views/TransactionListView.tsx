@@ -1,17 +1,25 @@
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Platform,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
 
 import { useTransactionListViewModel } from '../viewmodels/useTransactionListViewModel';
+import { CategoryFilterChips } from '../widgets/CategoryFilterChips';
+import { CustomDateRangeFields } from '../widgets/CustomDateRangeFields';
 import { DateFilterChips, TypeFilterChips } from '../widgets/FilterChips';
 import { EmptyState } from '../widgets/EmptyState';
 import { ErrorState } from '../widgets/ErrorState';
-import { LanguageToggle } from '../widgets/LanguageToggle';
 import { LoadingState } from '../widgets/LoadingState';
 import { SearchBar } from '../widgets/SearchBar';
 import { StateMessage } from '../widgets/StateMessage';
-import { ThemeToggle } from '../widgets/ThemeToggle';
 import { TransactionCard } from '../widgets/TransactionCard';
 
 export function TransactionListView() {
@@ -23,33 +31,133 @@ export function TransactionListView() {
     <View>
       <View
         style={[
-          styles.headerRow,
+          styles.headerTop,
           {
-            marginBottom: spacing.md,
+            marginBottom: spacing.sm,
             marginHorizontal: spacing.lg,
             marginTop: spacing.sm,
           },
+        ]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          onPress={vm.openDrawer}
+          style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.8 : 1 }]}
+          testID="drawer-menu-button"
+        >
+          <Text style={{ color: colors.primary, fontSize: typography.fontSize.lg }}>☰</Text>
+        </Pressable>
+        <View style={styles.headerActions}>
+          {Platform.OS === 'web' ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={vm.isRefreshing}
+              onPress={() => void vm.refresh()}
+              style={({ pressed }) => [
+                styles.textButton,
+                {
+                  borderColor: colors.borderSubtle,
+                  opacity: pressed || vm.isRefreshing ? 0.7 : 1,
+                },
+              ]}
+              testID="header-refresh-button"
+            >
+              <Text style={{ color: colors.primary, fontSize: typography.fontSize.sm }}>
+                {vm.labels.refresh}
+              </Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            onPress={vm.openProfile}
+            style={({ pressed }) => [
+              styles.textButton,
+              { borderColor: colors.borderSubtle, opacity: pressed ? 0.8 : 1 },
+            ]}
+            testID="profile-header-button"
+          >
+            <Text style={{ color: colors.textSecondary, fontSize: typography.fontSize.sm }}>👤</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <Text
+        style={{
+          color: colors.textPrimary,
+          fontSize: typography.fontSize.lg,
+          fontWeight: typography.fontWeight.semibold,
+          marginBottom: spacing.xxs,
+          marginHorizontal: spacing.lg,
+        }}
+        testID="greeting-text"
+      >
+        {vm.greetingText}
+      </Text>
+      <Text
+        style={{
+          color: colors.textMuted,
+          fontSize: typography.fontSize.sm,
+          marginBottom: spacing.xxs,
+          marginHorizontal: spacing.lg,
+        }}
+      >
+        {vm.labels.balance}
+      </Text>
+      <Text
+        style={{
+          color: colors.navy,
+          fontSize: typography.fontSize.xxl,
+          fontWeight: typography.fontWeight.bold,
+          marginBottom: spacing.md,
+          marginHorizontal: spacing.lg,
+        }}
+        testID="balance-amount"
+      >
+        {vm.balanceFormatted}
+      </Text>
+
+      <View
+        style={[
+          styles.addRow,
+          { marginBottom: spacing.md, marginHorizontal: spacing.lg },
         ]}
       >
         <Text
           style={{
             color: colors.textPrimary,
             flex: 1,
-            fontSize: typography.fontSize.xxl,
+            fontSize: typography.fontSize.xl,
             fontWeight: typography.fontWeight.bold,
           }}
         >
           {vm.labels.title}
         </Text>
-        <View style={[styles.toggles, { gap: spacing.sm }]}>
-          <LanguageToggle
-            accessibilityLabel={vm.languageAccessibilityLabel}
-            label={vm.languageToggleLabel}
-            onPress={vm.toggleLocale}
-          />
-          <ThemeToggle label={vm.themeToggleLabel} onPress={vm.cycleTheme} />
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={vm.openAddTransaction}
+          style={({ pressed }) => [
+            styles.addButton,
+            {
+              backgroundColor: colors.primary,
+              opacity: pressed ? 0.9 : 1,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+            },
+          ]}
+          testID="add-transaction-button"
+        >
+          <Text
+            style={{
+              color: colors.textInverse,
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.semibold,
+            }}
+          >
+            {vm.labels.add}
+          </Text>
+        </Pressable>
       </View>
+
       <SearchBar
         accessibilityLabel={vm.labels.searchPlaceholder}
         onChangeText={vm.setQuery}
@@ -65,6 +173,20 @@ export function TransactionListView() {
         onChange={vm.setDateRange}
         options={[...vm.dateFilterOptions]}
         value={vm.dateRange}
+      />
+      {vm.dateRange === 'custom' ? (
+        <CustomDateRangeFields
+          customEnd={vm.customEnd}
+          customStart={vm.customStart}
+          locale={vm.locale}
+          onChangeEnd={vm.setCustomEnd}
+          onChangeStart={vm.setCustomStart}
+        />
+      ) : null}
+      <CategoryFilterChips
+        locale={vm.locale}
+        onChange={vm.setCategoryFilter}
+        value={vm.categoryFilter}
       />
     </View>
   );
@@ -133,15 +255,17 @@ export function TransactionListView() {
         }
         ListHeaderComponent={listHeader}
         refreshControl={
-          <RefreshControl
-            colors={[colors.primary]}
-            onRefresh={() => void vm.refresh()}
-            refreshing={vm.loading}
-            tintColor={colors.primary}
-          />
+          Platform.OS !== 'web' ? (
+            <RefreshControl
+              colors={[colors.primary]}
+              onRefresh={() => void vm.refresh()}
+              refreshing={vm.isRefreshing}
+              tintColor={colors.primary}
+            />
+          ) : undefined
         }
         renderItem={({ item }) => (
-          <TransactionCard onPress={vm.openDetail} transaction={item} />
+          <TransactionCard locale={vm.locale} onPress={vm.openDetail} transaction={item} />
         )}
         testID="transaction-list-flatlist"
       />
@@ -150,17 +274,36 @@ export function TransactionListView() {
 }
 
 const styles = StyleSheet.create({
+  addButton: {
+    borderRadius: 10,
+  },
+  addRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
   flex: {
     flex: 1,
   },
   flexGrow: {
     flexGrow: 1,
   },
-  headerRow: {
+  headerActions: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: 8,
   },
-  toggles: {
+  headerTop: {
+    alignItems: 'center',
     flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  iconButton: {
+    padding: 4,
+  },
+  textButton: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
 });

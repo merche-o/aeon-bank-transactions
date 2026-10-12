@@ -1,37 +1,47 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { t } from '@/i18n';
-import type { Transaction } from '@/models/Transaction';
+import type { TransactionCategory } from '@/models/Transaction';
 import { shareTransaction } from '@/services/ShareService';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTransactionStore } from '@/store/transactionStore';
+import { getCategoryLabel } from '@/utils/categories';
 
 export function useTransactionDetailViewModel(refId: string) {
   const locale = usePreferencesStore((state) => state.locale);
-  const getByRefId = useTransactionStore((state) => state.getByRefId);
-  const ensureByRefId = useTransactionStore((state) => state.ensureByRefId);
-  const [resolved, setResolved] = useState<Transaction | null | undefined>(
-    () => getByRefId(refId) ?? undefined,
+  const storeTransaction = useTransactionStore((state) =>
+    state.transactions.find((item) => item.refId === refId),
   );
+  const ensureByRefId = useTransactionStore((state) => state.ensureByRefId);
+  const setCategory = useTransactionStore((state) => state.setCategory);
+  const [fetched, setFetched] = useState<typeof storeTransaction>(undefined);
 
   useEffect(() => {
-    const cached = getByRefId(refId);
-    if (cached) {
-      setResolved(cached);
+    if (storeTransaction) {
       return;
     }
     let cancelled = false;
     void ensureByRefId(refId).then((item) => {
       if (!cancelled) {
-        setResolved(item);
+        setFetched(item ?? undefined);
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [ensureByRefId, getByRefId, refId]);
+  }, [ensureByRefId, refId, storeTransaction]);
 
-  const transaction = resolved ?? undefined;
+  const transaction = storeTransaction ?? fetched;
+
+  const updateCategory = useCallback(
+    (category: TransactionCategory) => {
+      if (transaction == null) {
+        return;
+      }
+      void setCategory(refId, category);
+    },
+    [refId, setCategory, transaction],
+  );
 
   const shareLabels = useMemo(
     () => ({
@@ -51,10 +61,15 @@ export function useTransactionDetailViewModel(refId: string) {
     await shareTransaction(transaction, t('share.title', locale), shareLabels);
   }, [locale, shareLabels, transaction]);
 
+  const categoryLabel =
+    transaction != null ? getCategoryLabel(transaction.category, locale) : '';
+
   return {
     locale,
     transaction,
     share,
+    updateCategory,
+    categoryLabel,
     labels: {
       title: t('detail.title', locale),
       reference: t('detail.reference', locale),
@@ -62,6 +77,7 @@ export function useTransactionDetailViewModel(refId: string) {
       recipient: t('detail.recipient', locale),
       transferName: t('detail.transferName', locale),
       amount: t('detail.amount', locale),
+      category: t('detail.category', locale),
       shareButton: t('share.button', locale),
       notFoundTitle: t('notFound.title', locale),
       notFoundMessage: t('notFound.message', locale),

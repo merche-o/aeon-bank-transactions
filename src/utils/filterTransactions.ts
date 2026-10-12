@@ -7,12 +7,12 @@ function matchesQuery(transaction: Transaction, query: string): boolean {
     return true;
   }
 
-  const amountText = String(transaction.amount);
   const haystack = [
     transaction.refId,
     transaction.recipientName,
     transaction.transferName,
-    amountText,
+    transaction.category,
+    String(transaction.amount),
   ]
     .join(' ')
     .toLowerCase();
@@ -30,17 +30,44 @@ function matchesType(
   return getFlowType(transaction) === typeFilter;
 }
 
+function matchesCategory(
+  transaction: Transaction,
+  categoryFilter: FilterCriteria['category'],
+): boolean {
+  if (categoryFilter === 'all') {
+    return true;
+  }
+  return transaction.category === categoryFilter;
+}
+
 function matchesDateRange(
   transaction: Transaction,
-  dateRange: FilterCriteria['dateRange'],
+  criteria: FilterCriteria,
   now: Date,
 ): boolean {
-  if (dateRange === 'all') {
+  const transferTime = new Date(transaction.transferDate).getTime();
+
+  if (criteria.dateRange === 'custom') {
+    if (criteria.customStart) {
+      const start = new Date(criteria.customStart).getTime();
+      if (transferTime < start) {
+        return false;
+      }
+    }
+    if (criteria.customEnd) {
+      const end = new Date(criteria.customEnd).getTime();
+      if (transferTime > end) {
+        return false;
+      }
+    }
     return true;
   }
 
-  const transferTime = new Date(transaction.transferDate).getTime();
-  const days = dateRange === '7d' ? 7 : 30;
+  if (criteria.dateRange === 'all') {
+    return true;
+  }
+
+  const days = criteria.dateRange === '7d' ? 7 : 30;
   const cutoff = now.getTime() - days * 24 * 60 * 60 * 1000;
   return transferTime >= cutoff && transferTime <= now.getTime();
 }
@@ -54,6 +81,7 @@ export function filterTransactions(
     (transaction) =>
       matchesQuery(transaction, criteria.query) &&
       matchesType(transaction, criteria.type) &&
-      matchesDateRange(transaction, criteria.dateRange, now),
+      matchesCategory(transaction, criteria.category) &&
+      matchesDateRange(transaction, criteria, now),
   );
 }

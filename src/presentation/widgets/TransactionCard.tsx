@@ -1,17 +1,20 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { Locale } from '@/i18n/types';
 import type { Transaction } from '@/models/Transaction';
 import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/formatDate';
 
 import { AmountText } from './AmountText';
+import { CategoryBadge } from './CategoryBadge';
 
 export type TransactionCardProps = {
   transaction: Transaction;
   onPress: (refId: string) => void;
+  locale: Locale;
 };
 
-export function TransactionCard({ transaction, onPress }: TransactionCardProps) {
+export function TransactionCard({ transaction, onPress, locale }: TransactionCardProps) {
   const theme = useTheme();
   const { colors, spacing, typography } = theme;
 
@@ -63,6 +66,7 @@ export function TransactionCard({ transaction, onPress }: TransactionCardProps) 
           >
             {formatDate(transaction.transferDate)}
           </Text>
+          <CategoryBadge category={transaction.category} locale={locale} />
         </View>
         <AmountText amount={transaction.amount} />
       </View>

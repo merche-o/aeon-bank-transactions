@@ -10,7 +10,10 @@ import { useTransactionListViewModel } from '../useTransactionListViewModel';
 const mockNavigate = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: mockNavigate }),
+  useNavigation: () => ({
+    navigate: mockNavigate,
+    openDrawer: jest.fn(),
+  }),
 }));
 
 describe('useTransactionListViewModel', () => {

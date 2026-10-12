@@ -11,6 +11,7 @@ const sample: Transaction = {
   recipientName: 'Aeon Retail',
   transferName: 'Purchase',
   amount: -88.9,
+  category: 'food',
 };
 
 describe('TransactionCard', () => {
@@ -19,7 +20,7 @@ describe('TransactionCard', () => {
 
     const { getByTestId, getByText } = await render(
       <ThemeProvider mode="light">
-        <TransactionCard onPress={onPress} transaction={sample} />
+        <TransactionCard locale="en" onPress={onPress} transaction={sample} />
       </ThemeProvider>,
     );
 

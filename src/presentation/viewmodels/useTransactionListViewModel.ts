@@ -3,51 +3,40 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { t } from '@/i18n';
-import type { Locale } from '@/i18n/types';
-import type { DateRangeFilter, FilterCriteria, TypeFilter } from '@/models/Transaction';
-import type { RootNavigationProp } from '@/navigation/types';
-import {
-  usePreferencesStore,
-  type ThemeMode,
-} from '@/store/preferencesStore';
+import type {
+  CategoryFilter,
+  DateRangeFilter,
+  FilterCriteria,
+  TypeFilter,
+} from '@/models/Transaction';
+import type { TransactionListNavigationProp } from '@/navigation/types';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTransactionStore } from '@/store/transactionStore';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { filterTransactions } from '@/utils/filterTransactions';
-
 const DEFAULT_CRITERIA: FilterCriteria = {
   query: '',
   type: 'all',
   dateRange: 'all',
+  category: 'all',
 };
 
-const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system'];
-
-function nextThemeMode(current: ThemeMode): ThemeMode {
-  const index = THEME_CYCLE.indexOf(current);
-  const nextIndex = index === -1 ? 0 : (index + 1) % THEME_CYCLE.length;
-  return THEME_CYCLE[nextIndex] ?? 'system';
-}
-
-function themeLabelKey(
-  mode: ThemeMode,
-): 'theme.light' | 'theme.dark' | 'theme.system' {
-  if (mode === 'dark') {
-    return 'theme.dark';
-  }
-  if (mode === 'system') {
-    return 'theme.system';
-  }
-  return 'theme.light';
+function interpolate(template: string, params: Record<string, string>): string {
+  return Object.entries(params).reduce(
+    (acc, [key, value]) => acc.replace(`{${key}}`, value),
+    template,
+  );
 }
 
 export function useTransactionListViewModel() {
-  const navigation = useNavigation<RootNavigationProp>();
+  const navigation = useNavigation<TransactionListNavigationProp>();
   const locale = usePreferencesStore((state) => state.locale);
-  const themeMode = usePreferencesStore((state) => state.themeMode);
-  const setLocale = usePreferencesStore((state) => state.setLocale);
-  const setThemeMode = usePreferencesStore((state) => state.setThemeMode);
+  const displayName = usePreferencesStore((state) => state.displayName);
 
   const storeTransactions = useTransactionStore((state) => state.transactions);
   const loading = useTransactionStore((state) => state.loading);
+  const isRefreshing = useTransactionStore((state) => state.isRefreshing);
+  const balance = useTransactionStore((state) => state.balance);
   const error = useTransactionStore((state) => state.error);
   const fetch = useTransactionStore((state) => state.fetch);
   const refresh = useTransactionStore((state) => state.refresh);
@@ -55,6 +44,9 @@ export function useTransactionListViewModel() {
   const [query, setQuery] = useState(DEFAULT_CRITERIA.query);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(DEFAULT_CRITERIA.type);
   const [dateRange, setDateRange] = useState<DateRangeFilter>(DEFAULT_CRITERIA.dateRange);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>(DEFAULT_CRITERIA.category);
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
 
   const debouncedQuery = useDebounce(query, 300);
 
@@ -67,8 +59,11 @@ export function useTransactionListViewModel() {
       query: debouncedQuery,
       type: typeFilter,
       dateRange,
+      category: categoryFilter,
+      customStart: dateRange === 'custom' ? customStart || undefined : undefined,
+      customEnd: dateRange === 'custom' ? customEnd || undefined : undefined,
     }),
-    [debouncedQuery, typeFilter, dateRange],
+    [debouncedQuery, typeFilter, dateRange, categoryFilter, customStart, customEnd],
   );
 
   const filteredTransactions = useMemo(
@@ -79,7 +74,8 @@ export function useTransactionListViewModel() {
   const hasActiveFilters =
     debouncedQuery.trim().length > 0 ||
     typeFilter !== 'all' ||
-    dateRange !== 'all';
+    dateRange !== 'all' ||
+    categoryFilter !== 'all';
 
   const showNoMatchingResults =
     !loading &&
@@ -98,14 +94,22 @@ export function useTransactionListViewModel() {
     [navigation],
   );
 
-  const cycleTheme = useCallback(() => {
-    setThemeMode(nextThemeMode(themeMode));
-  }, [setThemeMode, themeMode]);
+  const openAddTransaction = useCallback(() => {
+    navigation.navigate('AddTransaction');
+  }, [navigation]);
 
-  const toggleLocale = useCallback(() => {
-    const next: Locale = locale === 'en' ? 'bm' : 'en';
-    setLocale(next);
-  }, [locale, setLocale]);
+  const openProfile = useCallback(() => {
+    navigation.navigate('Profile');
+  }, [navigation]);
+
+  const openDrawer = useCallback(() => {
+    navigation.openDrawer();
+  }, [navigation]);
+
+  const greetingName =
+    displayName.trim().length > 0 ? displayName.trim() : t('customer.default', locale);
+
+  const greetingText = interpolate(t('list.hello', locale), { name: greetingName });
 
   const typeFilterOptions = useMemo(
     () =>
@@ -135,6 +139,11 @@ export function useTransactionListViewModel() {
           label: t('filters.date30d', locale),
           testID: 'filter-date-30d',
         },
+        {
+          value: 'custom' as const,
+          label: t('filters.dateCustom', locale),
+          testID: 'filter-date-custom',
+        },
       ] as const,
     [locale],
   );
@@ -147,16 +156,24 @@ export function useTransactionListViewModel() {
     setTypeFilter,
     dateRange,
     setDateRange,
+    categoryFilter,
+    setCategoryFilter,
+    customStart,
+    setCustomStart,
+    customEnd,
+    setCustomEnd,
     transactions: filteredTransactions,
     loading,
+    isRefreshing,
+    balance,
+    balanceFormatted: formatCurrency(balance),
+    greetingText,
     error,
     refresh,
     openDetail,
-    cycleTheme,
-    toggleLocale,
-    themeToggleLabel: t(themeLabelKey(themeMode), locale),
-    languageToggleLabel: t(locale === 'en' ? 'language.bm' : 'language.en', locale),
-    languageAccessibilityLabel: t('language.label', locale),
+    openAddTransaction,
+    openProfile,
+    openDrawer,
     showNoMatchingResults,
     showFullScreenError,
     isEmpty: !loading && error == null && storeTransactions.length === 0,
@@ -170,6 +187,9 @@ export function useTransactionListViewModel() {
       empty: t('empty.transactions', locale),
       error: t('error.loadFailed', locale),
       retry: t('retry.button', locale),
+      balance: t('list.balance', locale),
+      refresh: t('list.refresh', locale),
+      add: t('list.add', locale),
     },
   };
 }
