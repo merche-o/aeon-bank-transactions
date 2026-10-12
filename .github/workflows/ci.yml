@@ -68,12 +68,13 @@ jobs:
           TAG="web-${SHORT_SHA}"
           TITLE="Web release ${SHORT_SHA}"
           NOTES="$(cat <<EOF
-          ## AEON Bank Transactions
+          ## Live app
+
+          **[Open on Vercel](${VERCEL_APP_URL})**
+
+          \`${VERCEL_APP_URL}\`
 
           Quality checks passed on \`main\`.
-
-          ### Live app (Vercel)
-          ${VERCEL_APP_URL}
 
           ### Commit
           - SHA: \`${GITHUB_SHA}\`

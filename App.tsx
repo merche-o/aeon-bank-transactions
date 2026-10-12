@@ -51,6 +51,13 @@ function ThemedApp() {
 }
 
 async function bootstrapTransactions(): Promise<void> {
+  // Web: never import expo-sqlite (WASM breaks Metro export). Use mock data.
+  if (Platform.OS === 'web') {
+    setTransactionRepository(new MockTransactionRepository(400));
+    await useTransactionStore.getState().fetch();
+    return;
+  }
+
   try {
     const { SqliteTransactionRepository } = await import(
       '@/repositories/SqliteTransactionRepository'
@@ -58,11 +65,6 @@ async function bootstrapTransactions(): Promise<void> {
     setTransactionRepository(new SqliteTransactionRepository());
     await useTransactionStore.getState().fetch();
   } catch {
-    if (Platform.OS === 'web') {
-      setTransactionRepository(new MockTransactionRepository(400));
-      await useTransactionStore.getState().fetch();
-      return;
-    }
     setTransactionRepository(new MockTransactionRepository(400));
     await useTransactionStore.getState().fetch();
   }
