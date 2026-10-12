@@ -19,7 +19,7 @@ export function useRequestPayViewModel(recipientId: string) {
 
   const [amountText, setAmountText] = useState('');
   const [transferNameDraft, setTransferNameDraft] = useState('');
-  const [category, setCategory] = useState<TransactionCategory>('transfer');
+  const [category, setCategory] = useState<TransactionCategory>('unknown');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 

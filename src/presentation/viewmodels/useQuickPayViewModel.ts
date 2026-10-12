@@ -41,7 +41,7 @@ export function useQuickPayViewModel(recipientId: string) {
 
   const [amountText, setAmountText] = useState('');
   const [transferNameDraft, setTransferNameDraft] = useState('');
-  const [category, setCategory] = useState<TransactionCategory>('transfer');
+  const [category, setCategory] = useState<TransactionCategory>('unknown');
   const [timing, setTiming] = useState<PayTiming>('now');
   const [scheduleDateIso, setScheduleDateIso] = useState(() =>
     minimumScheduleDate().toISOString(),
