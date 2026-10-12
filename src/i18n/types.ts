@@ -124,6 +124,7 @@ export type TranslationKey =
   | 'budget.expenses'
   | 'budget.byCategory'
   | 'budget.byMonth'
+  | 'budget.totalSpend'
   | 'budget.net'
   | 'budget.vsPrior'
   | 'budget.vsPriorUp'
