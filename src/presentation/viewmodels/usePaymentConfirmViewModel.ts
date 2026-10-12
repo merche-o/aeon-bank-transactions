@@ -10,6 +10,7 @@ import type {
   TransactionsStackNavigationProp,
   TransactionsStackParamList,
 } from '@/navigation/types';
+import { shareTransaction } from '@/services/ShareService';
 import { usePaymentRequestStore } from '@/store/paymentRequestStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useRecipientStore } from '@/store/recipientStore';
@@ -134,6 +135,24 @@ export function usePaymentConfirmViewModel() {
     ).replace('TransactionDetail', { refId: id });
   }, [navigation, refId, transaction?.refId]);
 
+  const shareLabels = useMemo(
+    () => ({
+      reference: t('detail.reference', locale),
+      date: t('detail.date', locale),
+      recipient: t('detail.recipient', locale),
+      transferName: t('detail.transferName', locale),
+      amount: t('detail.amount', locale),
+    }),
+    [locale],
+  );
+
+  const share = useCallback(async () => {
+    if (transaction == null) {
+      return;
+    }
+    await shareTransaction(transaction, t('share.title', locale), shareLabels);
+  }, [locale, shareLabels, transaction]);
+
   return {
     locale,
     kind,
@@ -147,8 +166,10 @@ export function usePaymentConfirmViewModel() {
     dateLabel: formatDate(dateIso),
     statusLabel,
     canOpenDetail: Boolean(transaction?.refId ?? refId),
+    canShare: transaction != null,
     done,
     openDetail,
+    share,
     labels: {
       title: t('pay.confirmTitle', locale),
       success: t(successTitleKey(kind), locale),
@@ -160,6 +181,7 @@ export function usePaymentConfirmViewModel() {
       status: t('detail.status', locale),
       done: t('pay.confirmDone', locale),
       viewDetail: t('pay.confirmViewDetail', locale),
+      share: t('share.button', locale),
     },
   };
 }

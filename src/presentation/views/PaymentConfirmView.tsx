@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useLayoutEffect } from 'react';
 import {
   Animated,
@@ -7,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 
 import { useTheme } from '@/theme';
 
@@ -24,8 +25,37 @@ export function PaymentConfirmView() {
       title: vm.labels.title,
       headerBackVisible: false,
       gestureEnabled: false,
+      headerRight: !vm.canShare
+        ? undefined
+        : () => (
+            <Pressable
+              accessibilityLabel={vm.labels.share}
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => void vm.share()}
+              style={({ pressed }) => ({
+                marginRight: 4,
+                opacity: pressed ? 0.7 : 1,
+                padding: 8,
+              })}
+              testID="share-button"
+            >
+              <Ionicons
+                color={colors.primary}
+                name="share-outline"
+                size={22}
+              />
+            </Pressable>
+          ),
     });
-  }, [navigation, vm.labels.title]);
+  }, [
+    colors.primary,
+    navigation,
+    vm.canShare,
+    vm.labels.share,
+    vm.labels.title,
+    vm.share,
+  ]);
 
   return (
     <SafeAreaView
@@ -116,6 +146,32 @@ export function PaymentConfirmView() {
           },
         ]}
       >
+        {vm.canShare ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void vm.share()}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              {
+                borderColor: colors.borderSubtle,
+                opacity: pressed ? 0.88 : 1,
+                paddingVertical: spacing.md,
+              },
+            ]}
+            testID="payment-confirm-share"
+          >
+            <Text
+              style={{
+                color: colors.textPrimary,
+                fontSize: typography.fontSize.md,
+                fontWeight: typography.fontWeight.semibold,
+                textAlign: 'center',
+              }}
+            >
+              {vm.labels.share}
+            </Text>
+          </Pressable>
+        ) : null}
         {vm.canOpenDetail ? (
           <Pressable
             accessibilityRole="button"
